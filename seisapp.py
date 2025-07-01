@@ -1,0 +1,202 @@
+from git import Repo
+from git.exc import GitCommandError
+
+repo_url = "https://github.com/avk256/seisproc.git"
+clone_path = "./seisproc"
+
+try:
+    Repo.clone_from(repo_url, clone_path)
+    print("Репозиторій успішно клоновано!")
+except GitCommandError as e:
+    print("❌ Помилка клонування репозиторію:")
+
+import seisproc.seisproc as ssp
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+st.set_page_config(page_title="SeisApp", layout="wide")
+st.title("Аналіз даних сейсмометрів")
+
+# === Глобальні параметри, які впливають на інші вкладки ===
+with st.sidebar:
+    st.header("⚙️ Загальні налаштування")
+    
+    st.title("📥 Завантаження серій даних")
+    
+    # 1. Завантаження кількох CSV файлів
+    uploaded_files = st.file_uploader(
+        "Оберіть один або кілька CSV-файлів, які містять дані серій",
+        type="csv",
+        accept_multiple_files=True
+    )
+    
+    
+    # Зчитування файлів у словник DataFrame'ів
+    dfs = {}  # ключ: ім'я файлу, значення: DataFrame
+    
+    if uploaded_files:
+        for file in uploaded_files:
+            df = pd.read_csv(file, header=None, sep=';')
+            df.columns = ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']
+            dfs[file.name] = df
+
+    if len(dfs)>0:
+        
+        
+        fs = st.number_input("🔻 Частота дискретизації", min_value=800.0, value=800.0, step=10.0)
+        min_freq = 0
+        min_freq = 0
+
+        # ================ Смуговий фільтр =====================================
+        
+        st.subheader("🎚️ Смуговий фільтр")
+        # Поля для введення мінімальної та максимальної частоти
+        col1, col2 = st.columns(2)
+        with col1:
+            min_freq = st.number_input("🔻 min частота", min_value=0.0, value=20.0, step=10.0)
+        with col2:
+            max_freq = st.number_input("🔺 max частота", min_value=0.0, value=50.0, step=10.0)
+        
+        # Кнопка для запуску фільтрації
+        if st.button("⚙️ Фільтрувати"):
+            st.success(f"Застосовується фільтр: від {min_freq} до {max_freq} Гц")
+            # Тут можна викликати функцію фільтрації
+            for key, data in zip(dfs.keys(), dfs.values()):
+                dfs[key] = ssp.filter_dataframe(data, min_freq, max_freq, fs)
+
+        # ================== Часове вікно =====================================
+        
+        st.subheader("🎚️ Часове вікно")
+        # Поля для введення мінімальної та максимальної частоти
+        col1, col2 = st.columns(2)
+        with col1:
+            min_time = st.number_input("🔻 min час", min_value=0.0, value=1.0, step=1.0)
+        with col2:
+            max_time = st.number_input("🔺 max час", min_value=0.0, value=10.0, step=1.0)
+        
+        # Кнопка для запуску фільтрації
+        if st.button("⚙️ Застосувати вікно"):
+            st.success(f"Застосовується часове вікно: від {min_time} до {max_time} с")
+            # Тут можна викликати функцію фільтрації
+            for key, data in zip(dfs.keys(), dfs.values()):
+                dfs[key] = ssp.cut_dataframe_time_window(data, fs, min_time, max_time)
+
+        # ===================== Детренд =======================================
+   
+        st.subheader("🎚️ Операція віднімання тренду")
+        # Кнопка для запуску детренду
+        if st.button("⚙️ Застосувати детренд"):
+            st.success("Застосовується детренд")
+            # Тут можна викликати функцію фільтрації
+            for key, data in zip(dfs.keys(), dfs.values()):
+                dfs[key] = ssp.detrend_dataframe(data)
+        
+    
+    
+
+# === Вкладки ===
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "Крос-кореляція", "Уявна енергія"])
+
+# === Вкладка 1: Дані ===
+with tab1:
+    
+        # 3. Виведення результатів
+        st.success(f"✅ Завантажено {len(dfs)} файлів")
+        
+        for filename, df in dfs.items():
+            st.subheader(f"📄 Файл: {filename}")
+            st.write(df.head())
+    
+            # Додатково: інформація
+            st.text(f"Форма: {df.shape[0]} рядків × {df.shape[1]} колонок")
+            st.write(df.describe())
+            
+    
+
+
+# === Вкладка 2: Графіки ===
+with tab2:
+    
+    
+    st.subheader("Графіки у домені амплітуда-час")
+    n_cols = int(st.number_input("Кількість колонок для відображення", min_value=0.0, value=3.0, step=1.0))
+    selected = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'])
+    
+    if len(dfs)>0:
+        for filename, data in dfs.items():
+            st.subheader(filename)
+            st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected), use_container_width=True)
+            
+    
+
+# === Вкладка 3: Спектр ===
+with tab3:
+    st.subheader("Спектрограми. Представлення у домені частота-час")
+    
+    if len(dfs)>0:
+        for filename, data in dfs.items():
+            st.subheader(filename)
+            st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected), use_container_width=True)
+    
+# === Вкладка 4: PSD ===
+with tab4:
+    st.subheader("Спектральна щільність потужності (PSD)")
+    
+    if len(dfs)>0:
+        for filename, data in dfs.items():
+            st.subheader(filename)
+            st.pyplot(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected), use_container_width=True)
+
+# === Вкладка 5: Крос-кореляція ===
+with tab5:
+    st.subheader("Затримки в сигналах геофонів, обчислені за методом крос-кореляції")
+    n_min = st.number_input("Мінімальне негативне значення діапазону", min_value=-100.0, value=-0.07, step=0.01)
+    n_max = st.number_input("Максимальне негативне значення діапазону", min_value=-100.0, value=-0.01, step=0.01)
+    p_min = st.number_input("Мінімальне позитивне значення діапазону", min_value=0.0, value=0.01, step=0.01)
+    p_max = st.number_input("Максимальне позитивне значення діапазону", min_value=0.0, value=0.07, step=0.01)
+    selected = st.multiselect("Оберіть типи геофонів для відображення зі списку:", ['X', 'Y', 'Z'], default=['X', 'Z'])
+    # delays_dict = {key: None for key in selected}
+    
+    if len(dfs)>0:
+        for filename, data in dfs.items():
+            st.subheader(filename)
+            X, Y, Z = ssp.cross_corr_crossval_from_df(data, fs, verbose=False, allowed_lag_ranges_s=[(n_min, n_max),(p_min, p_max)])
+            delays_dict = {name: globals()[name] for name in selected}
+            st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict))
+
+# === Вкладка 5: Уявна енергія ===
+with tab6:
+    st.subheader("Обчислення векторной поляризаційної фільтрації")
+
+    Vr1 = []
+    Vr2 = []
+    Vr3 = []
+    Vz1 = []
+    Vz2 = []
+    Vz3 = []
+    
+    if len(dfs)>0:
+
+        angl1 = st.number_input("Напрям на джерело сейсмометра 1, градуси", min_value=0.0, value=0.0, step=10.0)
+        angl2 = st.number_input("Напрям на джерело сейсмометра 2, градуси", min_value=0.0, value=0.0, step=10.0)
+        angl3 = st.number_input("Напрям на джерело сейсмометра 3, градуси", min_value=0.0, value=0.0, step=10.0)
+        series = int(st.number_input("Оберіть серію для подальшого аналізу", min_value=1.0, max_value=float(len(dfs)),value=1.0, step=1.0))
+        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0))
+
+        for i, (filename, data) in enumerate(dfs.items()):
+            st.write("Файл ", filename, " індекс серії  ", str(i+1))
+            # st.subheader(str(i))
+            Vr1.append(ssp.compute_radial(data['X1'], data['Y11'], data['Y12'], angl1))
+            Vr2.append(ssp.compute_radial(data['X2'], data['Y21'], data['Y22'], angl2))
+            Vr3.append(ssp.compute_radial(data['X3'], data['Y31'], data['Y32'], angl2))
+            Vz1.append(data['Z1'])
+            Vz2.append(data['Z2'])
+            Vz3.append(data['Z3'])
+        Vr = {'1':Vr1, '2':Vr2, '3':Vr3}
+        Vz = {'1':Vz1, '2':Vz2, '3':Vz3}
+        st.subheader("Графік Ганкеля")
+        st.pyplot(ssp.plot_hankel(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], scale=1.0),use_container_width=True)
+        st.subheader("Графік уявної енергії")
+        st.pyplot(ssp.vpf(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], fs, mode='fig'))
