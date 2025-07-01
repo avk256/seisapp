@@ -2,8 +2,8 @@ matplotlib==3.9.0
 numpy_stl==3.1.1
 plotly==5.22.0
 Requests==2.32.3
-scipy
-git
-sklearn
-seaborn
-statsmodels
+scipy==1.15.3
+git==3.1.44
+sklearn==1.6.1
+seaborn==0.13.2
+statsmodels==0.14.4
