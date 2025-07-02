@@ -1,3 +1,4 @@
+import git
 from git import Repo
 from git.exc import GitCommandError
 
@@ -15,6 +16,9 @@ import seisproc.seisproc as ssp
 import streamlit as st
 import pandas as pd
 import numpy as np
+
+import statsmodels
+statsmodels.__version__
 
 st.set_page_config(page_title="SeisApp", layout="wide")
 st.title("Аналіз даних сейсмометрів")
