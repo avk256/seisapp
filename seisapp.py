@@ -18,7 +18,7 @@ import pandas as pd
 import numpy as np
 
 import statsmodels
-statsmodels.__version__
+
 
 st.set_page_config(page_title="SeisApp", layout="wide")
 st.title("Аналіз даних сейсмометрів")
@@ -101,7 +101,7 @@ with st.sidebar:
     
 
 # === Вкладки ===
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "Крос-кореляція", "Уявна енергія"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "Крос-кореляція", "Когерентність", "Когерентне віднімання", "Уявна енергія", "Математичне модель сонара"])
 
 # === Вкладка 1: Дані ===
 with tab1:
@@ -131,7 +131,12 @@ with tab2:
     if len(dfs)>0:
         for filename, data in dfs.items():
             st.subheader(filename)
-            st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected), use_container_width=True)
+            # st.write(filename)
+            # st.caption(filename)
+            
+            if all(elem in list(data.columns) for elem in selected):
+            
+                st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected), use_container_width=True)
             
     
 
@@ -142,7 +147,9 @@ with tab3:
     if len(dfs)>0:
         for filename, data in dfs.items():
             st.subheader(filename)
-            st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected), use_container_width=True)
+            
+            if all(elem in list(data.columns) for elem in selected):
+                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected), use_container_width=True)
     
 # === Вкладка 4: PSD ===
 with tab4:
@@ -151,7 +158,8 @@ with tab4:
     if len(dfs)>0:
         for filename, data in dfs.items():
             st.subheader(filename)
-            st.pyplot(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected), use_container_width=True)
+            if all(elem in list(data.columns) for elem in selected):
+                st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True)
 
 # === Вкладка 5: Крос-кореляція ===
 with tab5:
@@ -166,12 +174,65 @@ with tab5:
     if len(dfs)>0:
         for filename, data in dfs.items():
             st.subheader(filename)
+            
+            # if all(elem in list(data.columns) for elem in selected):
             X, Y, Z = ssp.cross_corr_crossval_from_df(data, fs, verbose=False, allowed_lag_ranges_s=[(n_min, n_max),(p_min, p_max)])
             delays_dict = {name: globals()[name] for name in selected}
             st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict))
-
-# === Вкладка 5: Уявна енергія ===
+            
+# === Вкладка 6: Когерентність ===
 with tab6:
+    st.subheader("Когерентність між двома сигналами")
+
+    if len(dfs)>0:
+
+        st.write("1й сигнал")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select1")
+        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select2")
+        st.write("2й сигнал")
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select3")
+        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select4")
+        st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
+        
+        
+
+# === Вкладка 7: Когерентне віднімання ===
+with tab7:
+    st.subheader("Когерентне віднімання шуму")
+    if len(dfs)>0:
+
+        st.write("1й сигнал")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select11")
+        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
+        st.write("2й сигнал (шум)")
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select13")
+        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select14")
+
+        signal, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], nperseg=2048, noverlap=1792,coherence_threshold=0.7)
+        signal = signal[:len(dfs[selected_ser1][selected_seism1])]
+        
+        # st.write(len(dfs[selected_ser1][selected_seism1]))
+        # st.write(len(dfs[selected_ser2][selected_seism2]))
+        # st.write(len(signal))
+        
+
+        df = pd.DataFrame({'Orig.':dfs[selected_ser1][selected_seism1], 'Noise':dfs[selected_ser2][selected_seism2], 'Subtract':signal})
+        
+        if len(df):
+            dfs["subst"] = df 
+            st.subheader("Графік амплітуда-час")
+            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=3, columns=['Orig.', 'Noise', 'Subtract'], threshold=0.5), use_container_width=True)
+            st.subheader("Спектрограма")
+            st.pyplot(ssp.spectr_plot(df, fs, n_cols=3, columns=['Orig.', 'Noise', 'Subtract']), use_container_width=True)
+            st.subheader("Графік PSD")
+            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=3, columns=['Orig.', 'Noise', 'Subtract'], mode='plotly'), use_container_width=True)
+            
+        
+        # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
+
+
+# === Вкладка 8: Уявна енергія ===
+with tab8:
     st.subheader("Обчислення векторной поляризаційної фільтрації")
 
     Vr1 = []
@@ -192,15 +253,21 @@ with tab6:
         for i, (filename, data) in enumerate(dfs.items()):
             st.write("Файл ", filename, " індекс серії  ", str(i+1))
             # st.subheader(str(i))
-            Vr1.append(ssp.compute_radial(data['X1'], data['Y11'], data['Y12'], angl1))
-            Vr2.append(ssp.compute_radial(data['X2'], data['Y21'], data['Y22'], angl2))
-            Vr3.append(ssp.compute_radial(data['X3'], data['Y31'], data['Y32'], angl2))
-            Vz1.append(data['Z1'])
-            Vz2.append(data['Z2'])
-            Vz3.append(data['Z3'])
+            if 'X1' in list(data.columns):
+                Vr1.append(ssp.compute_radial(data['X1'], data['Y11'], data['Y12'], angl1))
+                Vr2.append(ssp.compute_radial(data['X2'], data['Y21'], data['Y22'], angl2))
+                Vr3.append(ssp.compute_radial(data['X3'], data['Y31'], data['Y32'], angl2))
+                Vz1.append(data['Z1'])
+                Vz2.append(data['Z2'])
+                Vz3.append(data['Z3'])
         Vr = {'1':Vr1, '2':Vr2, '3':Vr3}
         Vz = {'1':Vz1, '2':Vz2, '3':Vz3}
         st.subheader("Графік Ганкеля")
-        st.pyplot(ssp.plot_hankel(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], scale=1.0),use_container_width=True)
+        st.plotly_chart(ssp.plot_hankel(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], scale=1.0, mode = 'plotly'),use_container_width=True)
         st.subheader("Графік уявної енергії")
-        st.pyplot(ssp.vpf(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], fs, mode='fig'))
+        st.plotly_chart(ssp.vpf(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], fs, mode='plotly'))
+
+# === Вкладка 9: Математична модель сонара ===
+with tab9:
+    st.subheader("Математична модель сонара")
+    
