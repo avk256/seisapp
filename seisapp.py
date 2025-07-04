@@ -19,9 +19,16 @@ import numpy as np
 
 import statsmodels
 
+@st.cache_data
+def load_file(file_name):
+    # st.write("Завантаження...")  # Це буде видно лише 1 раз
+    df = pd.read_csv(file_name, header=None, sep=';')
+    df.columns = ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']
+    return df
 
 st.set_page_config(page_title="SeisApp", layout="wide")
 st.title("Аналіз даних сейсмометрів")
+
 
 # === Глобальні параметри, які впливають на інші вкладки ===
 with st.sidebar:
@@ -42,9 +49,7 @@ with st.sidebar:
     
     if uploaded_files:
         for file in uploaded_files:
-            df = pd.read_csv(file, header=None, sep=';')
-            df.columns = ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']
-            dfs[file.name] = df
+            dfs[file.name] = load_file(file)
 
     if len(dfs)>0:
         
@@ -99,6 +104,7 @@ with st.sidebar:
         
     
     
+dfs = dfs
 
 # === Вкладки ===
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "Крос-кореляція", "Когерентність", "Когерентне віднімання", "Уявна енергія", "Математичне модель сонара"])
@@ -198,36 +204,43 @@ with tab6:
 
 # === Вкладка 7: Когерентне віднімання ===
 with tab7:
+    
+    st.session_state.dfs = dfs
+    
     st.subheader("Когерентне віднімання шуму")
+    # st.write(st.session_state.dfs.keys())
     if len(dfs)>0:
 
         st.write("1й сигнал")
         selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select11")
-        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
+        # selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
         st.write("2й сигнал (шум)")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select13")
-        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select14")
-
-        signal, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], nperseg=2048, noverlap=1792,coherence_threshold=0.7)
-        signal = signal[:len(dfs[selected_ser1][selected_seism1])]
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select13")        
+        st.write("Геофони для аналізу")
+        selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="select14")
         
-        # st.write(len(dfs[selected_ser1][selected_seism1]))
-        # st.write(len(dfs[selected_ser2][selected_seism2]))
-        # st.write(len(signal))
-        
-
-        df = pd.DataFrame({'Orig.':dfs[selected_ser1][selected_seism1], 'Noise':dfs[selected_ser2][selected_seism2], 'Subtract':signal})
-        
-        if len(df):
-            dfs["subst"] = df 
-            st.subheader("Графік амплітуда-час")
-            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=3, columns=['Orig.', 'Noise', 'Subtract'], threshold=0.5), use_container_width=True)
-            st.subheader("Спектрограма")
-            st.pyplot(ssp.spectr_plot(df, fs, n_cols=3, columns=['Orig.', 'Noise', 'Subtract']), use_container_width=True)
-            st.subheader("Графік PSD")
-            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=3, columns=['Orig.', 'Noise', 'Subtract'], mode='plotly'), use_container_width=True)
+        data_geoph = {}
+        for geoph in ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']: 
+            signal, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(dfs[selected_ser1][geoph], dfs[selected_ser2][geoph], nperseg=2048, noverlap=1792,coherence_threshold=0.7)
+            signal = signal[:len(dfs[selected_ser1][geoph])]
+            data_geoph[geoph] = signal
             
-        
+       
+
+
+        df = pd.DataFrame(data_geoph)
+        st.session_state.dfs[selected_ser1+"_subtract"] = df
+        st.subheader("Результат когерентного віднімання")
+        if len(df):
+            # dfs[selected_ser1+"_subtract"] = df 
+            st.subheader("Графік амплітуда-час")
+            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True)
+            st.subheader("Спектрограма")
+            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
+            st.subheader("Графік PSD")
+            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True)
+            
+        # st.write(st.session_state.dfs.keys())
         # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
 
 
@@ -235,39 +248,105 @@ with tab7:
 with tab8:
     st.subheader("Обчислення векторной поляризаційної фільтрації")
 
-    Vr1 = []
-    Vr2 = []
-    Vr3 = []
-    Vz1 = []
-    Vz2 = []
-    Vz3 = []
+    
     
     if len(dfs)>0:
 
         angl1 = st.number_input("Напрям на джерело сейсмометра 1, градуси", min_value=0.0, value=0.0, step=10.0)
         angl2 = st.number_input("Напрям на джерело сейсмометра 2, градуси", min_value=0.0, value=0.0, step=10.0)
         angl3 = st.number_input("Напрям на джерело сейсмометра 3, градуси", min_value=0.0, value=0.0, step=10.0)
-        series = int(st.number_input("Оберіть серію для подальшого аналізу", min_value=1.0, max_value=float(len(dfs)),value=1.0, step=1.0))
+        series = st.selectbox("Оберіть серію зі списку:", list(st.session_state.dfs.keys()),key="select23")
         seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0))
 
-        for i, (filename, data) in enumerate(dfs.items()):
-            st.write("Файл ", filename, " індекс серії  ", str(i+1))
+        VrVz_dict = {}
+
+        for i, (filename, data) in enumerate(st.session_state.dfs.items()):
+            # st.write("Файл ", filename, " індекс серії  ", str(i+1))
             # st.subheader(str(i))
             if 'X1' in list(data.columns):
+    
+                Vr1 = []
+                Vr2 = []
+                Vr3 = []
+                Vz1 = []
+                Vz2 = []
+                Vz3 = []
+                # st.write(i)
+                # st.write(filename)
                 Vr1.append(ssp.compute_radial(data['X1'], data['Y11'], data['Y12'], angl1))
                 Vr2.append(ssp.compute_radial(data['X2'], data['Y21'], data['Y22'], angl2))
                 Vr3.append(ssp.compute_radial(data['X3'], data['Y31'], data['Y32'], angl2))
                 Vz1.append(data['Z1'])
                 Vz2.append(data['Z2'])
                 Vz3.append(data['Z3'])
-        Vr = {'1':Vr1, '2':Vr2, '3':Vr3}
-        Vz = {'1':Vz1, '2':Vz2, '3':Vz3}
+                Vr = {'1':Vr1, '2':Vr2, '3':Vr3}
+                Vz = {'1':Vz1, '2':Vz2, '3':Vz3}
+                VrVz_dict[filename+'Vr'] = Vr
+                VrVz_dict[filename+'Vz'] = Vz
+                
+                # st.write(filename+'Vr')
+                # st.write(filename+'Vz')
+                
+       
         st.subheader("Графік Ганкеля")
-        st.plotly_chart(ssp.plot_hankel(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], scale=1.0, mode = 'plotly'),use_container_width=True)
+        st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], scale=1.0, mode = 'plotly'),use_container_width=True)
         st.subheader("Графік уявної енергії")
-        st.plotly_chart(ssp.vpf(Vr[str(seismometr)][series-1], Vz[str(seismometr)][series-1], fs, mode='plotly'))
+        st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='plotly'))
 
 # === Вкладка 9: Математична модель сонара ===
 with tab9:
     st.subheader("Математична модель сонара")
+
+    if len(dfs)>0:
+
+        st.write("Cигнал")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="item91")
+        #selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
+        st.write("Шум")
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="item92")        
+        st.write("Сейсмометр для якого буде виконано аналіз")
+        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="item93"))
+
+        rho = float(st.number_input("Густина грунта, кг/м³", min_value=0.0, value=2500.0, step=10.0, key="item94"))
+
+        VrVz_dict = {}
+
+        for i, (filename, data) in enumerate(st.session_state.dfs.items()):
+            # st.write("Файл ", filename, " індекс серії  ", str(i+1))
+            # st.subheader(str(i))
+            if 'X1' in list(data.columns):
+    
+                Vr1 = []
+                Vr2 = []
+                Vr3 = []
+                Vz1 = []
+                Vz2 = []
+                Vz3 = []
+                # st.write(i)
+                # st.write(filename)
+                Vr1.append(ssp.compute_radial(data['X1'], data['Y11'], data['Y12'], angl1))
+                Vr2.append(ssp.compute_radial(data['X2'], data['Y21'], data['Y22'], angl2))
+                Vr3.append(ssp.compute_radial(data['X3'], data['Y31'], data['Y32'], angl2))
+                Vz1.append(data['Z1'])
+                Vz2.append(data['Z2'])
+                Vz3.append(data['Z3'])
+                Vr = {'1':Vr1, '2':Vr2, '3':Vr3}
+                Vz = {'1':Vz1, '2':Vz2, '3':Vz3}
+                VrVz_dict[filename+'Vr'] = Vr
+                VrVz_dict[filename+'Vz'] = Vz
+                
+        
+        print('tab9')
+        print(np.array(VrVz_dict[selected_ser1+'Vr'][str(seismometr)])[0])
+        print(np.array(VrVz_dict[selected_ser1+'Vz'][str(seismometr)])[0])
+        ls_signal = ssp.energy_density(np.array(VrVz_dict[selected_ser1+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[selected_ser1+'Vz'][str(seismometr)])[0], rho)
+        ls_noise = ssp.energy_density(np.array(VrVz_dict[selected_ser2+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[selected_ser2+'Vz'][str(seismometr)])[0], rho)
+        
+        st.subheader("Щільність енергії джерела, ДБ")
+        st.subheader(ls_signal)
+        st.subheader("Щільність енергії шуму, ДБ")
+        st.subheader(ls_noise)
+        st.subheader("SNR")
+        st.subheader(ls_signal/ls_noise)
+    
     
