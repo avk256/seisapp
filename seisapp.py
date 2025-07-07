@@ -133,6 +133,8 @@ with tab2:
     st.subheader("Графіки у домені амплітуда-час")
     n_cols = int(st.number_input("Кількість колонок для відображення", min_value=0.0, value=3.0, step=1.0))
     selected = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'])
+    one_plot = st.checkbox("Показати всі геофони на одному графіку", value=True)
+    
     
     if len(dfs)>0:
         for filename, data in dfs.items():
@@ -142,8 +144,10 @@ with tab2:
             
             if all(elem in list(data.columns) for elem in selected):
             
-                st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected), use_container_width=True)
-            
+                if one_plot:
+                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly_one"), use_container_width=True)
+                else:
+                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly"), use_container_width=True)
     
 
 # === Вкладка 3: Спектр ===
