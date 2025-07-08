@@ -333,7 +333,7 @@ with tab9:
         st.write("Шум")
         selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()), key="mat_ser2")        
         st.write("Сейсмометр для якого буде виконано аналіз")
-        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="item93"), key="mat_seism")
+        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="mat_seism"))
 
         rho = float(st.number_input("Густина грунта, кг/м³", min_value=0.0, value=2500.0, step=10.0, key="mat_rho"))
 
