@@ -9,7 +9,7 @@ try:
     Repo.clone_from(repo_url, clone_path)
     print("Репозиторій успішно клоновано!")
 except GitCommandError as e:
-    print("❌ Помилка клонування репозиторію:")
+    print("❌ Помилка клонування репозиторію")
 
 import seisproc.seisproc as ssp
 
@@ -29,12 +29,16 @@ def load_file(file_name):
 st.set_page_config(page_title="SeisApp", layout="wide")
 st.title("Аналіз даних сейсмометрів")
 
+if "counter" not in st.session_state:
+    st.session_state.count = 0
 
+print(st.session_state.count)
 # === Глобальні параметри, які впливають на інші вкладки ===
 with st.sidebar:
     st.header("⚙️ Загальні налаштування")
     
     st.title("📥 Завантаження серій даних")
+
     
     # 1. Завантаження кількох CSV файлів
     uploaded_files = st.file_uploader(
@@ -42,16 +46,21 @@ with st.sidebar:
         type="csv",
         accept_multiple_files=True
     )
-    
-    
-    # Зчитування файлів у словник DataFrame'ів
+
     dfs = {}  # ключ: ім'я файлу, значення: DataFrame
     
-    if uploaded_files:
+    # if st.button("Завантажити файли"):
+    # Зчитування файлів у словник DataFrame'ів
+    if "dfs" not in st.session_state:
+        st.session_state.dfs = dfs
+    if uploaded_files and len(st.session_state.dfs)==0:
         for file in uploaded_files:
             dfs[file.name] = load_file(file)
+        st.write("Завантаження файлів...")    
+        st.session_state.dfs = dfs
+        st.session_state.count = st.session_state.count + 1  
 
-    if len(dfs)>0:
+    if len(st.session_state.dfs)>0:
         
         
         fs = st.number_input("🔻 Частота дискретизації", min_value=800.0, value=800.0, step=10.0)
@@ -72,8 +81,10 @@ with st.sidebar:
         if st.button("⚙️ Фільтрувати"):
             st.success(f"Застосовується фільтр: від {min_freq} до {max_freq} Гц")
             # Тут можна викликати функцію фільтрації
-            for key, data in zip(dfs.keys(), dfs.values()):
-                dfs[key] = ssp.filter_dataframe(data, min_freq, max_freq, fs)
+            for key, data in st.session_state.dfs.items():
+                st.session_state.dfs[key] = ssp.filter_dataframe(data, min_freq, max_freq, fs)
+                
+        
 
         # ================== Часове вікно =====================================
         
@@ -89,9 +100,12 @@ with st.sidebar:
         if st.button("⚙️ Застосувати вікно"):
             st.success(f"Застосовується часове вікно: від {min_time} до {max_time} с")
             # Тут можна викликати функцію фільтрації
-            for key, data in zip(dfs.keys(), dfs.values()):
+            for key, data in st.session_state.dfs.items():
                 dfs[key] = ssp.cut_dataframe_time_window(data, fs, min_time, max_time)
-
+                
+            st.session_state.dfs = dfs
+            print(st.session_state.dfs[key].describe())
+            breakpoint()
         # ===================== Детренд =======================================
    
         st.subheader("🎚️ Операція віднімання тренду")
@@ -99,15 +113,23 @@ with st.sidebar:
         if st.button("⚙️ Застосувати детренд"):
             st.success("Застосовується детренд")
             # Тут можна викликати функцію фільтрації
-            for key, data in zip(dfs.keys(), dfs.values()):
-                dfs[key] = ssp.detrend_dataframe(data)
-        
+            for key, data in st.session_state.dfs.items():
+                print(data.describe())
+                breakpoint()
+
+                st.session_state.dfs[key] = ssp.detrend_dataframe(data)
     
     
-dfs = dfs
+    
+# dfs = dfs
+
+# if st.button("⚙️ Розрахувати"):
+
 
 # === Вкладки ===
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "Крос-кореляція", "Когерентність", "Когерентне віднімання", "Уявна енергія", "Математична модель сонара"])
+
+
 
 # === Вкладка 1: Дані ===
 with tab1:
@@ -115,7 +137,7 @@ with tab1:
         # 3. Виведення результатів
         st.success(f"✅ Завантажено {len(dfs)} файлів")
         
-        for filename, df in dfs.items():
+        for filename, df in st.session_state.dfs.items():
             st.subheader(f"📄 Файл: {filename}")
             st.write(df.head())
     
@@ -136,8 +158,8 @@ with tab2:
     one_plot = st.checkbox("Показати всі геофони на одному графіку", value=True)
     
     
-    if len(dfs)>0:
-        for filename, data in dfs.items():
+    if len(st.session_state.dfs)>0:
+        for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             # st.write(filename)
             # st.caption(filename)
@@ -153,20 +175,24 @@ with tab2:
 # === Вкладка 3: Спектр ===
 with tab3:
     st.subheader("Спектрограми. Представлення у домені частота-час")
+    seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1)
+    overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01)
     
-    if len(dfs)>0:
-        for filename, data in dfs.items():
+
+    
+    if len(st.session_state.dfs)>0:
+        for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             
             if all(elem in list(data.columns) for elem in selected):
-                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected), use_container_width=True)
+                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected,seg_len_s=seg_len_s, overlap_s=overlap_s), use_container_width=True)
     
 # === Вкладка 4: PSD ===
 with tab4:
     st.subheader("Спектральна щільність потужності (PSD)")
     
-    if len(dfs)>0:
-        for filename, data in dfs.items():
+    if len(st.session_state.dfs)>0:
+        for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             if all(elem in list(data.columns) for elem in selected):
                 st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True)
@@ -181,8 +207,8 @@ with tab5:
     selected = st.multiselect("Оберіть типи геофонів для відображення зі списку:", ['X', 'Y', 'Z'], default=['X', 'Z'])
     # delays_dict = {key: None for key in selected}
     
-    if len(dfs)>0:
-        for filename, data in dfs.items():
+    if len(st.session_state.dfs)>0:
+        for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             
             # if all(elem in list(data.columns) for elem in selected):
@@ -194,39 +220,37 @@ with tab5:
 with tab6:
     st.subheader("Когерентність між двома сигналами")
 
-    if len(dfs)>0:
+    if len(st.session_state.dfs)>0:
 
         st.write("1й сигнал")
-        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select1")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select1")
         selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select2")
         st.write("2й сигнал")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select3")
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select3")
         selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select4")
-        st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
+        st.plotly_chart(ssp.plot_coherence(st.session_state.dfs[selected_ser1][selected_seism1], st.session_state.dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
         
         
 
 # === Вкладка 7: Когерентне віднімання ===
 with tab7:
     
-    st.session_state.dfs = dfs
-    
     st.subheader("Когерентне віднімання шуму")
     # st.write(st.session_state.dfs.keys())
-    if len(dfs)>0:
+    if len(st.session_state.dfs)>0:
 
         st.write("1й сигнал")
-        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select11")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select11")
         # selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
         st.write("2й сигнал (шум)")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(dfs.keys()),key="select13")        
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select13")        
         st.write("Геофони для аналізу")
         selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="select14")
         
         data_geoph = {}
         for geoph in ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']: 
-            signal, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(dfs[selected_ser1][geoph], dfs[selected_ser2][geoph], nperseg=2048, noverlap=1792,coherence_threshold=0.7)
-            signal = signal[:len(dfs[selected_ser1][geoph])]
+            signal, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(st.session_state.dfs[selected_ser1][geoph], st.session_state.dfs[selected_ser2][geoph], seg_len_s=None, overlap_s=None,coherence_threshold=0.7)
+            signal = signal[:len(st.session_state.dfs[selected_ser1][geoph])]
             data_geoph[geoph] = signal
             
        
@@ -254,7 +278,7 @@ with tab8:
 
     
     
-    if len(dfs)>0:
+    if len(st.session_state.dfs)>0:
 
         angl1 = st.number_input("Напрям на джерело сейсмометра 1, градуси", min_value=0.0, value=0.0, step=10.0)
         angl2 = st.number_input("Напрям на джерело сейсмометра 2, градуси", min_value=0.0, value=0.0, step=10.0)
@@ -301,7 +325,7 @@ with tab8:
 with tab9:
     st.subheader("Математична модель сонара")
 
-    if len(dfs)>0:
+    if len(st.session_state.dfs)>0:
 
         st.write("Cигнал")
         selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="item91")
