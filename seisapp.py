@@ -167,9 +167,9 @@ with tab2:
             if all(elem in list(data.columns) for elem in selected):
             
                 if one_plot:
-                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly_one"), use_container_width=True, key='plot_one')
+                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly_one"), use_container_width=True, key='plot_one'+filename)
                 else:
-                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly"), use_container_width=True, key='plot_many')
+                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly"), use_container_width=True, key='plot_many'+filename)
     
 
 # === Вкладка 3: Спектр ===
