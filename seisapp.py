@@ -262,11 +262,11 @@ with tab7:
         if len(df):
             # dfs[selected_ser1+"_subtract"] = df 
             st.subheader("Графік амплітуда-час")
-            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True,key="plot_sub_fig"+selected_geoph)
+            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True,key="plot_sub_fig")
             st.subheader("Спектрограма")
-            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True,key="plot_sub_spect"+selected_geoph)
+            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True,key="plot_sub_spect")
             st.subheader("Графік PSD")
-            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd"+selected_geoph)
+            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd")
             
         # st.write(st.session_state.dfs.keys())
         # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
