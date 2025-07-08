@@ -35,9 +35,9 @@ if "counter" not in st.session_state:
 print(st.session_state.count)
 # === Глобальні параметри, які впливають на інші вкладки ===
 with st.sidebar:
-    st.header("⚙️ Загальні налаштування")
+    st.header("⚙️ Загальні налаштування", key='gen_settings')
     
-    st.title("📥 Завантаження серій даних")
+    st.title("📥 Завантаження серій даних", key='load_data')
 
     
     # 1. Завантаження кількох CSV файлів
@@ -63,7 +63,7 @@ with st.sidebar:
     if len(st.session_state.dfs)>0:
         
         
-        fs = st.number_input("🔻 Частота дискретизації", min_value=800.0, value=800.0, step=10.0)
+        fs = st.number_input("🔻 Частота дискретизації", min_value=800.0, value=800.0, step=10.0, key='freq')
         min_freq = 0
         min_freq = 0
 
@@ -73,9 +73,9 @@ with st.sidebar:
         # Поля для введення мінімальної та максимальної частоти
         col1, col2 = st.columns(2)
         with col1:
-            min_freq = st.number_input("🔻 min частота", min_value=0.0, value=20.0, step=10.0)
+            min_freq = st.number_input("🔻 min частота", min_value=0.0, value=20.0, step=10.0, key='min_freq')
         with col2:
-            max_freq = st.number_input("🔺 max частота", min_value=0.0, value=50.0, step=10.0)
+            max_freq = st.number_input("🔺 max частота", min_value=0.0, value=50.0, step=10.0, key='max_freq')
         
         # Кнопка для запуску фільтрації
         if st.button("⚙️ Фільтрувати"):
@@ -92,9 +92,9 @@ with st.sidebar:
         # Поля для введення мінімальної та максимальної частоти
         col1, col2 = st.columns(2)
         with col1:
-            min_time = st.number_input("🔻 min час", min_value=0.0, value=1.0, step=1.0)
+            min_time = st.number_input("🔻 min час", min_value=0.0, value=1.0, step=1.0, key='min_time')
         with col2:
-            max_time = st.number_input("🔺 max час", min_value=0.0, value=10.0, step=1.0)
+            max_time = st.number_input("🔺 max час", min_value=0.0, value=10.0, step=1.0, key='max_time')
         
         # Кнопка для запуску фільтрації
         if st.button("⚙️ Застосувати вікно"):
@@ -153,9 +153,9 @@ with tab2:
     
     
     st.subheader("Графіки у домені амплітуда-час")
-    n_cols = int(st.number_input("Кількість колонок для відображення", min_value=0.0, value=3.0, step=1.0))
-    selected = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'])
-    one_plot = st.checkbox("Показати всі геофони на одному графіку", value=True)
+    n_cols = int(st.number_input("Кількість колонок для відображення", min_value=0.0, value=3.0, step=1.0, key='n_col'))
+    selected = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'], key='sel_geoph')
+    one_plot = st.checkbox("Показати всі геофони на одному графіку", value=True, key='one_plot')
     
     
     if len(st.session_state.dfs)>0:
@@ -167,16 +167,16 @@ with tab2:
             if all(elem in list(data.columns) for elem in selected):
             
                 if one_plot:
-                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly_one"), use_container_width=True)
+                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly_one"), use_container_width=True, key='plot_one')
                 else:
-                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly"), use_container_width=True)
+                    st.plotly_chart(ssp.plot_time_signals(data, fs, n_cols=n_cols, threshold=0.5, columns=selected, mode="plotly"), use_container_width=True, key='plot_many')
     
 
 # === Вкладка 3: Спектр ===
 with tab3:
     st.subheader("Спектрограми. Представлення у домені частота-час")
-    seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1)
-    overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01)
+    seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1, key='nperseg')
+    overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01, key='noverlap')
     
 
     
@@ -185,7 +185,7 @@ with tab3:
             st.subheader(filename)
             
             if all(elem in list(data.columns) for elem in selected):
-                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected,seg_len_s=seg_len_s, overlap_s=overlap_s), use_container_width=True)
+                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected,seg_len_s=seg_len_s, overlap_s=overlap_s), use_container_width=True, key='plot_spectr')
     
 # === Вкладка 4: PSD ===
 with tab4:
@@ -195,16 +195,16 @@ with tab4:
         for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             if all(elem in list(data.columns) for elem in selected):
-                st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True)
+                st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True, key='plot_psd')
 
 # === Вкладка 5: Крос-кореляція ===
 with tab5:
     st.subheader("Затримки в сигналах геофонів, обчислені за методом крос-кореляції")
-    n_min = st.number_input("Мінімальне негативне значення діапазону", min_value=-100.0, value=-0.07, step=0.01)
-    n_max = st.number_input("Максимальне негативне значення діапазону", min_value=-100.0, value=-0.01, step=0.01)
-    p_min = st.number_input("Мінімальне позитивне значення діапазону", min_value=0.0, value=0.01, step=0.01)
-    p_max = st.number_input("Максимальне позитивне значення діапазону", min_value=0.0, value=0.07, step=0.01)
-    selected = st.multiselect("Оберіть типи геофонів для відображення зі списку:", ['X', 'Y', 'Z'], default=['X', 'Z'])
+    n_min = st.number_input("Мінімальне негативне значення діапазону", min_value=-100.0, value=-0.07, step=0.01, key='n_min')
+    n_max = st.number_input("Максимальне негативне значення діапазону", min_value=-100.0, value=-0.01, step=0.01, key='n_max')
+    p_min = st.number_input("Мінімальне позитивне значення діапазону", min_value=0.0, value=0.01, step=0.01, key='p_min')
+    p_max = st.number_input("Максимальне позитивне значення діапазону", min_value=0.0, value=0.07, step=0.01, key='p_max')
+    selected = st.multiselect("Оберіть типи геофонів для відображення зі списку:", ['X', 'Y', 'Z'], default=['X', 'Z'], key='sel_geoph_cros')
     # delays_dict = {key: None for key in selected}
     
     if len(st.session_state.dfs)>0:
@@ -214,7 +214,7 @@ with tab5:
             # if all(elem in list(data.columns) for elem in selected):
             X, Y, Z = ssp.cross_corr_crossval_from_df(data, fs, verbose=False, allowed_lag_ranges_s=[(n_min, n_max),(p_min, p_max)])
             delays_dict = {name: globals()[name] for name in selected}
-            st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict))
+            st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict), key='plot_matrix')
             
 # === Вкладка 6: Когерентність ===
 with tab6:
@@ -223,12 +223,12 @@ with tab6:
     if len(st.session_state.dfs)>0:
 
         st.write("1й сигнал")
-        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select1")
-        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select2")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_ser1")
+        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="sel_seism1")
         st.write("2й сигнал")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select3")
-        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select4")
-        st.plotly_chart(ssp.plot_coherence(st.session_state.dfs[selected_ser1][selected_seism1], st.session_state.dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_ser2")
+        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="sel_seism2")
+        st.plotly_chart(ssp.plot_coherence(st.session_state.dfs[selected_ser1][selected_seism1], st.session_state.dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True, key='plot_coher')
         
         
 
@@ -240,12 +240,12 @@ with tab7:
     if len(st.session_state.dfs)>0:
 
         st.write("1й сигнал")
-        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select11")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub1")
         # selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
         st.write("2й сигнал (шум)")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="select13")        
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub2")        
         st.write("Геофони для аналізу")
-        selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="select14")
+        selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="sel_subs")
         
         data_geoph = {}
         for geoph in ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']: 
@@ -262,11 +262,11 @@ with tab7:
         if len(df):
             # dfs[selected_ser1+"_subtract"] = df 
             st.subheader("Графік амплітуда-час")
-            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True)
+            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True,key="plot_sub_fig")
             st.subheader("Спектрограма")
-            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
+            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True,key="plot_sub_spect")
             st.subheader("Графік PSD")
-            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True)
+            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd")
             
         # st.write(st.session_state.dfs.keys())
         # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
@@ -280,11 +280,11 @@ with tab8:
     
     if len(st.session_state.dfs)>0:
 
-        angl1 = st.number_input("Напрям на джерело сейсмометра 1, градуси", min_value=0.0, value=0.0, step=10.0)
-        angl2 = st.number_input("Напрям на джерело сейсмометра 2, градуси", min_value=0.0, value=0.0, step=10.0)
-        angl3 = st.number_input("Напрям на джерело сейсмометра 3, градуси", min_value=0.0, value=0.0, step=10.0)
-        series = st.selectbox("Оберіть серію зі списку:", list(st.session_state.dfs.keys()),key="select23")
-        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0))
+        angl1 = st.number_input("Напрям на джерело сейсмометра 1, градуси", min_value=0.0, value=0.0, step=10.0, key="energ_angl1")
+        angl2 = st.number_input("Напрям на джерело сейсмометра 2, градуси", min_value=0.0, value=0.0, step=10.0, key="energ_angl2")
+        angl3 = st.number_input("Напрям на джерело сейсмометра 3, градуси", min_value=0.0, value=0.0, step=10.0, key="energ_angl3")
+        series = st.selectbox("Оберіть серію зі списку:", list(st.session_state.dfs.keys()), key="energ_sel")
+        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="energ_seism"))
 
         VrVz_dict = {}
 
@@ -317,9 +317,9 @@ with tab8:
                 
        
         st.subheader("Графік Ганкеля")
-        st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], scale=1.0, mode = 'plotly'),use_container_width=True)
+        st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], scale=1.0, mode = 'plotly'),use_container_width=True, key="plot_hackl")
         st.subheader("Графік уявної енергії")
-        st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='plotly'))
+        st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='plotly'), key="plot_imenrg")
 
 # === Вкладка 9: Математична модель сонара ===
 with tab9:
@@ -328,14 +328,14 @@ with tab9:
     if len(st.session_state.dfs)>0:
 
         st.write("Cигнал")
-        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="item91")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()), key="mat_ser1")
         #selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
         st.write("Шум")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="item92")        
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()), key="mat_ser2")        
         st.write("Сейсмометр для якого буде виконано аналіз")
-        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="item93"))
+        seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="item93"), key="mat_seism")
 
-        rho = float(st.number_input("Густина грунта, кг/м³", min_value=0.0, value=2500.0, step=10.0, key="item94"))
+        rho = float(st.number_input("Густина грунта, кг/м³", min_value=0.0, value=2500.0, step=10.0, key="mat_rho"))
 
         VrVz_dict = {}
 
