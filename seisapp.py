@@ -185,7 +185,7 @@ with tab3:
             st.subheader(filename)
             
             if all(elem in list(data.columns) for elem in selected):
-                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected,seg_len_s=seg_len_s, overlap_s=overlap_s), use_container_width=True, key='plot_spectr')
+                st.pyplot(ssp.spectr_plot(data, fs, n_cols=n_cols, columns=selected,seg_len_s=seg_len_s, overlap_s=overlap_s), use_container_width=True)
     
 # === Вкладка 4: PSD ===
 with tab4:
@@ -195,7 +195,7 @@ with tab4:
         for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             if all(elem in list(data.columns) for elem in selected):
-                st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True, key='plot_psd')
+                st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True, key='plot_psd'+filename)
 
 # === Вкладка 5: Крос-кореляція ===
 with tab5:
@@ -214,7 +214,7 @@ with tab5:
             # if all(elem in list(data.columns) for elem in selected):
             X, Y, Z = ssp.cross_corr_crossval_from_df(data, fs, verbose=False, allowed_lag_ranges_s=[(n_min, n_max),(p_min, p_max)])
             delays_dict = {name: globals()[name] for name in selected}
-            st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict), key='plot_matrix')
+            st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict))
             
 # === Вкладка 6: Когерентність ===
 with tab6:
@@ -262,11 +262,11 @@ with tab7:
         if len(df):
             # dfs[selected_ser1+"_subtract"] = df 
             st.subheader("Графік амплітуда-час")
-            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True,key="plot_sub_fig")
+            st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True,key="plot_sub_fig"+selected_geoph)
             st.subheader("Спектрограма")
-            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True,key="plot_sub_spect")
+            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True,key="plot_sub_spect"+selected_geoph)
             st.subheader("Графік PSD")
-            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd")
+            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd"+selected_geoph)
             
         # st.write(st.session_state.dfs.keys())
         # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
@@ -317,9 +317,9 @@ with tab8:
                 
        
         st.subheader("Графік Ганкеля")
-        st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], scale=1.0, mode = 'plotly'),use_container_width=True, key="plot_hackl")
+        st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], scale=1.0, mode = 'plotly'),use_container_width=True, key="plot_hackl"+str(seismometr))
         st.subheader("Графік уявної енергії")
-        st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='plotly'), key="plot_imenrg")
+        st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='plotly'), key="plot_imenrg"+str(seismometr))
 
 # === Вкладка 9: Математична модель сонара ===
 with tab9:
