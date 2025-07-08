@@ -264,7 +264,7 @@ with tab7:
             st.subheader("Графік амплітуда-час")
             st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, columns=selected_geoph, threshold=0.5), use_container_width=True,key="plot_sub_fig")
             st.subheader("Спектрограма")
-            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True,key="plot_sub_spect")
+            st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
             st.subheader("Графік PSD")
             st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd")
             
