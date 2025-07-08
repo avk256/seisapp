@@ -105,7 +105,7 @@ with st.sidebar:
                 
             st.session_state.dfs = dfs
             print(st.session_state.dfs[key].describe())
-            breakpoint()
+            # breakpoint()
         # ===================== Детренд =======================================
    
         st.subheader("🎚️ Операція віднімання тренду")
@@ -115,7 +115,7 @@ with st.sidebar:
             # Тут можна викликати функцію фільтрації
             for key, data in st.session_state.dfs.items():
                 print(data.describe())
-                breakpoint()
+                # breakpoint()
 
                 st.session_state.dfs[key] = ssp.detrend_dataframe(data)
     
