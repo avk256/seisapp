@@ -345,7 +345,15 @@ with tab8:
         if submitted:
             signal = ssp.cut_dataframe_time_window(im_power_df, fs, min_time_s, max_time_s)
             noise = ssp.cut_dataframe_time_window(im_power_df, fs, min_time_n, max_time_n)
-            snr = 10*np.log10(np.mean(signal**2)+10**(-12))-10*np.log10(np.mean(noise**2)+10**(-12))
+            
+            signal_db = 10*np.log10(np.mean(signal**2)+10**(-12))
+            noise_db = 10*np.log10(np.mean(noise**2)+10**(-12))
+            
+            snr = signal_db-noise_db
+            
+            
+            st.subheader("RMS сигналу = " + str(signal_db) + " Дб")
+            st.subheader("RMS шуму = " + str(noise_db ) + " Дб")
             st.subheader("Відношення SNR = " + str(snr) + " Дб")
             st.subheader("Графік Ганкеля виділенного вікном сигналу")
             st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], 
