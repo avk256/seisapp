@@ -176,7 +176,7 @@ with tab2:
 with tab3:
     st.subheader("Спектрограми. Представлення у домені частота-час")
     
-    with st.form("window_form", clear_on_submit=False):
+    with st.form("spectr_window_form", clear_on_submit=False):
         seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1, key='nperseg')
         overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01, key='noverlap')
         submitted = st.form_submit_button("⚙️ Застосувати параметри")
@@ -337,7 +337,7 @@ with tab8:
         
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
-        with st.form("window_form", clear_on_submit=False):
+        with st.form("subs_window_form", clear_on_submit=False):
             # Поля для введення мінімальної та максимальної частоти
             col1, col2 = st.columns(2)
             with col1:
