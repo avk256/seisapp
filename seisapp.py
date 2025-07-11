@@ -193,12 +193,16 @@ with tab3:
 # === Вкладка 4: PSD ===
 with tab4:
     st.subheader("Спектральна щільність потужності (PSD)")
+    db_scale = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale1')
     
     if len(st.session_state.dfs)>0:
         for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             if all(elem in list(data.columns) for elem in selected):
-                st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly'), use_container_width=True, key='plot_psd'+filename)
+                if db_scale:
+                    st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly',scale='db'), use_container_width=True, key='plot_psd1'+filename)
+                else:
+                    st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly',scale='energy'), use_container_width=True, key='plot_psd2'+filename)
 
 # === Вкладка 5: Крос-кореляція ===
 with tab5:
@@ -270,7 +274,11 @@ with tab7:
             st.subheader("Спектрограма")
             st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
             st.subheader("Графік PSD")
-            st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly'), use_container_width=True,key="plot_sub_psd")
+            db_scale_subs = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale_subs')
+            if db_scale_subs:
+                st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True,key="plot_sub_psd1")
+            else:
+                st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True,key="plot_sub_psd2")
             
         # st.write(st.session_state.dfs.keys())
         # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
@@ -332,8 +340,32 @@ with tab8:
         st.subheader("Спектрограма")
         st.pyplot(ssp.spectr_plot(im_power_df, fs, n_cols=1, columns=['im_power']), use_container_width=True)
         st.subheader("Графік PSD")
-        st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly'), use_container_width=True,key="plot_vpf_psd")
+        db_scale_vpf = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale_vpf')
+        if db_scale_vpf:
+            st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='db'), use_container_width=True,key="plot_vpf_psd1")
+            f, Pxx = ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='db') 
+        else:
+            st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='energy'), use_container_width=True,key="plot_vpf_psd2")
+            f, Pxx = ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='energy') 
 
+        st.subheader("🎚️ Середнє квадратичне значення PSD в діапазоні")
+
+        with st.form("psd_window_form", clear_on_submit=False):
+            # Поля для введення мінімальної та максимальної частоти
+            col1, col2 = st.columns(2)
+            with col1:
+                min_freq_psd = st.number_input("🔻 Мінімальна частота", min_value=0.0, value=20.0, step=1.0, key='min_freq_psd')
+                
+            with col2:
+                max_freq_psd = st.number_input("🔺 Максимальна частота", min_value=0.0, value=50.0, step=1.0, key='max_freq_psd')
+            submitted = st.form_submit_button("⚙️ Розрахувати")
+            
+            if submitted:
+                print(f[0])
+                print(Pxx[0])
+                rms_psd, range_freq_val = ssp.rms_in_band(f[0], Pxx[0], min_freq_psd, max_freq_psd)
+                st.subheader(f"🎚️ RMS PSD дорівнює {rms_psd} в діапазоні від {range_freq_val[0]} Гц до {range_freq_val[1]} Гц")
+                
         
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
