@@ -175,12 +175,15 @@ with tab2:
 # === Вкладка 3: Спектр ===
 with tab3:
     st.subheader("Спектрограми. Представлення у домені частота-час")
-    seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1, key='nperseg')
-    overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01, key='noverlap')
     
-
+    with st.form("window_form", clear_on_submit=False):
+        seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1, key='nperseg')
+        overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01, key='noverlap')
+        submitted = st.form_submit_button("⚙️ Застосувати параметри")
     
-    if len(st.session_state.dfs)>0:
+    
+    
+    if submitted and len(st.session_state.dfs)>0:
         for filename, data in st.session_state.dfs.items():
             st.subheader(filename)
             
@@ -324,6 +327,13 @@ with tab8:
         st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='plotly'), key="plot_imenrg"+str(seismometr))
         im_power = ssp.vpf(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], fs, mode='matrix') 
         im_power_df = pd.DataFrame({'im_power':im_power})
+        # st.session_state.dfs[series+"_vpf"] = im_power_df
+        
+        st.subheader("Спектрограма")
+        st.pyplot(ssp.spectr_plot(im_power_df, fs, n_cols=1, columns=['im_power']), use_container_width=True)
+        st.subheader("Графік PSD")
+        st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly'), use_container_width=True,key="plot_vpf_psd")
+
         
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
