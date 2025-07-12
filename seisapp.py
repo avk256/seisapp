@@ -127,7 +127,7 @@ with st.sidebar:
 
 
 # === Вкладки ===
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "Крос-кореляція", "Когерентність", "Когерентне віднімання", "Уявна частина комплексної потужності", "Математична модель сонара"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs(["📈 Дані", "📊 Графіки", "Спектр", "PSD", "RMS за PSD",  "Крос-кореляція", "Когерентність", "Когерентне віднімання", "Уявна частина комплексної потужності", "Математична модель сонара"])
 
 
 
@@ -204,8 +204,44 @@ with tab4:
                 else:
                     st.plotly_chart(ssp.psd_plot_df(data, fs=fs, n_cols=n_cols, columns=selected, mode='plotly',scale='energy'), use_container_width=True, key='plot_psd2'+filename)
 
-# === Вкладка 5: Крос-кореляція ===
+# === Вкладка 5: RMS за PSD ===
 with tab5:
+    st.subheader("Графік PSD")
+    
+    if len(st.session_state.dfs)>0:
+        selected_ser_psd = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_rms_psd1")
+        selected_geoph_psd = st.selectbox("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="sel_rms_psd2")
+    
+        db_scale_psd = st.checkbox("Показати в шкалі децибел, дБ", value=False, key='db_scale_rms_psd')
+        if db_scale_psd:
+            st.plotly_chart(ssp.psd_plot_df(st.session_state.dfs[selected_ser_psd], fs=fs, n_cols=1, columns=[selected_geoph_psd], mode='plotly', scale='db'), use_container_width=True,key="plot_rms_psd1")
+            f, Pxx = ssp.psd_plot_df(st.session_state.dfs[selected_ser_psd], fs=fs, n_cols=1, columns=[selected_geoph_psd], mode='matrix', scale='db') 
+        else:
+            st.plotly_chart(ssp.psd_plot_df(st.session_state.dfs[selected_ser_psd], fs=fs, n_cols=1, columns=[selected_geoph_psd], mode='plotly', scale='energy'), use_container_width=True,key="plot_rms_psd2")
+            f, Pxx = ssp.psd_plot_df(st.session_state.dfs[selected_ser_psd], fs=fs, n_cols=1, columns=[selected_geoph_psd], mode='matrix', scale='energy') 
+    
+        
+        st.subheader("🎚️ Середнє квадратичне значення PSD в діапазоні")
+    
+        with st.form("rms_psd_window_form", clear_on_submit=False):
+            # Поля для введення мінімальної та максимальної частоти
+            col1, col2 = st.columns(2)
+            with col1:
+                min_freq_rms_psd = st.number_input("🔻 Мінімальна частота", min_value=0.0, value=20.0, step=1.0, key='min_freq_rms_psd')
+                
+            with col2:
+                max_freq_rms_psd = st.number_input("🔺 Максимальна частота", min_value=0.0, value=50.0, step=1.0, key='max_freq_rms_psd')
+            submitted = st.form_submit_button("⚙️ Розрахувати")
+            
+            if submitted:
+                print(f[0])
+                print(Pxx[0])
+                rms_psd, range_freq_val = ssp.rms_in_band(f[0], Pxx[0], min_freq_rms_psd, max_freq_rms_psd)
+                st.subheader(f"🎚️ RMS PSD дорівнює {rms_psd} в діапазоні від {range_freq_val[0]} Гц до {range_freq_val[1]} Гц")
+    
+
+# === Вкладка 6: Крос-кореляція ===
+with tab6:
     st.subheader("Затримки в сигналах геофонів, обчислені за методом крос-кореляції")
     # n_min = st.number_input("Мінімальне негативне значення діапазону", min_value=-100.0, value=-0.07, step=0.01, key='n_min')
     # n_max = st.number_input("Максимальне негативне значення діапазону", min_value=-100.0, value=-0.01, step=0.01, key='n_max')
@@ -224,8 +260,8 @@ with tab5:
             delays_dict = {name: globals()[name] for name in selected}
             st.pyplot(ssp.plot_multiple_delay_matrices(delays_dict))
             
-# === Вкладка 6: Когерентність ===
-with tab6:
+# === Вкладка 7: Когерентність ===
+with tab7:
     st.subheader("Когерентність між двома сигналами")
 
     if len(st.session_state.dfs)>0:
@@ -240,8 +276,8 @@ with tab6:
         
         
 
-# === Вкладка 7: Когерентне віднімання ===
-with tab7:
+# === Вкладка 8: Когерентне віднімання ===
+with tab8:
     
     st.subheader("Когерентне віднімання шуму")
     # st.write(st.session_state.dfs.keys())
@@ -284,8 +320,8 @@ with tab7:
         # st.plotly_chart(ssp.plot_coherence(dfs[selected_ser1][selected_seism1], dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True)
 
 
-# === Вкладка 8: Уявна енергія ===
-with tab8:
+# === Вкладка 9: Уявна енергія ===
+with tab9:
     st.subheader("Обчислення векторной поляризаційної фільтрації")
     
     if len(st.session_state.dfs)>0:
@@ -340,7 +376,7 @@ with tab8:
         st.subheader("Спектрограма")
         st.pyplot(ssp.spectr_plot(im_power_df, fs, n_cols=1, columns=['im_power']), use_container_width=True)
         st.subheader("Графік PSD")
-        db_scale_vpf = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale_vpf')
+        db_scale_vpf = st.checkbox("Показати в шкалі децибел, дБ", value=False, key='db_scale_vpf')
         if db_scale_vpf:
             st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='db'), use_container_width=True,key="plot_vpf_psd1")
             f, Pxx = ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='db') 
@@ -406,8 +442,8 @@ with tab8:
             
 
 
-# === Вкладка 9: Математична модель сонара ===
-with tab9:
+# === Вкладка 10: Математична модель сонара ===
+with tab10:
     st.subheader("Математична модель сонара")
 
     # if len(st.session_state.dfs)>0:
