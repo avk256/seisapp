@@ -387,7 +387,7 @@ with tab8:
            
             st.session_state.plot_flag = True
             
-            df = pd.DataFrame(data_geoph)
+            cleaned_sig_df = pd.DataFrame(data_geoph)
             st.session_state.dfs[selected_ser1+"_subtract"] = df
             
             st.session_state.noisy_sig_plot = st.session_state.dfs[selected_ser1]
