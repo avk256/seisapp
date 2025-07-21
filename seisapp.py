@@ -425,18 +425,48 @@ with tab8:
                 
     
     if subs_mode == "Дві серії":
-    
-        with st.form("subs_window_form1", clear_on_submit=False):    
+
+        st.write("1й сигнал")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub1")
+        # selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
+        st.write("2й сигнал (шум)")
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub2")        
+        st.write("Геофони для аналізу")
+        selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="sel_subs")
+        
+
+
+
+
+        with st.form("subs_window_form2", clear_on_submit=False):    
+            
+            
+            if selected_ser1:
+                st.subheader("Обрано серію сигналу "+selected_ser1)
+            if selected_ser2:
+                st.subheader("Обрано серію шуму "+selected_ser2)
+            
             if len(st.session_state.dfs)>0:
         
-                st.write("1й сигнал")
-                selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub1")
-                # selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
-                st.write("2й сигнал (шум)")
-                selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub2")        
-                st.write("Геофони для аналізу")
-                selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="sel_subs")
                 
+                
+                
+                plot_figs_s = st.checkbox("Побудувати графік амплітуда-час початкового сигналу", value=False, key='plot_figs_s2')
+                plot_figs_n = st.checkbox("Побудувати графік амплітуда-час шуму", value=False, key='plot_figs_n2')
+                plot_figs_r = st.checkbox("Побудувати графік амплітуда-час результату віднімання", value=False, key='plot_figs_r2')
+                
+                plot_spectr_s = st.checkbox("Побудувати спектрограму початкового сигналу", value=False, key='plot_spectr_s2')
+                plot_spectr_n = st.checkbox("Побудувати спектрограму шуму", value=False, key='plot_spectr_n2')
+                plot_spectr_r = st.checkbox("Побудувати спектрограму результату віднімання", value=False, key='plot_spectr_r2')
+                
+                plot_psd_s = st.checkbox("Побудувати PSD початкового сигналу", value=False, key='plot_psd_s2')
+                plot_psd_n = st.checkbox("Побудувати PSD шуму", value=False, key='plot_psd_n2')
+                plot_psd_r = st.checkbox("Побудувати PSD результату віднімання", value=False, key='plot_psd_r2')
+                
+                plot_vpf_s = st.checkbox("Побудувати VPF початкового сигналу", value=False, key='plot_vpf_s2')
+                plot_vpf_n = st.checkbox("Побудувати VPF шуму", value=False, key='plot_vpf_n2')
+                plot_vpf_r = st.checkbox("Побудувати VPF результату віднімання", value=False, key='plot_vpf_r2')
+
                 
                 
                 submitted = st.form_submit_button("⚙️ Застосувати параметри")
@@ -444,6 +474,14 @@ with tab8:
         if submitted:
             
             st.session_state.selected_ser1 = selected_ser1
+            # st.session_state.selected_ser2 = selected_ser2
+            st.write("Обрано серію сигналу "+selected_ser1)
+            st.write("Обрано серію шуму "+selected_ser2)
+            
+            # print(selected_ser1)
+            # print(st.session_state.selected_ser1)
+            # breakpoint()       
+               
             
             for geoph in selected_geoph: # ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']: 
                 signal, _, _, _, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(st.session_state.dfs[selected_ser1][geoph], st.session_state.dfs[selected_ser2][geoph], seg_len_s=None, overlap_s=None,coherence_threshold=0.7)
