@@ -267,17 +267,18 @@ with tab7:
     if len(st.session_state.dfs)>0:
 
         st.write("1й сигнал")
-        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_ser1")
-        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="sel_seism1")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser1")
+        selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="coh_sel_seism1")
         st.write("2й сигнал")
-        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_ser2")
-        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="sel_seism2")
+        selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser2")
+        selected_seism2 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="coh_sel_seism2")
         st.plotly_chart(ssp.plot_coherence(st.session_state.dfs[selected_ser1][selected_seism1], st.session_state.dfs[selected_ser2][selected_seism2], fs, f"{selected_ser1}, {selected_seism1}", f"{selected_ser2}, {selected_seism2}", mode='plotly'), use_container_width=True, key='plot_coher')
         
         
 
 # === Вкладка 8: Когерентне віднімання ===
 with tab8:
+    
     
     st.subheader("Когерентне віднімання шуму")
     # st.write(st.session_state.dfs.keys())
@@ -301,42 +302,100 @@ with tab8:
     
     if "res_signal" not in st.session_state:
         st.session_state.res_signal = []
+        
+    dfs_vpf = {}  # ключ: ім'я файлу, значення: DataFrame
+    
+    # if st.button("Завантажити файли"):
+    # Зчитування файлів у словник DataFrame'ів
+    if "dfs_vpf" not in st.session_state:
+        st.session_state.dfs_vpf = dfs_vpf
+        
+    if "selected_ser1" not in st.session_state:
+        st.session_state.selected_ser1 = 0
     
 
     if subs_mode == "Одна серія":
         
+        st.write("Cигнал")
+        selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub_one")
+        st.write("Геофони для аналізу")
+        selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="sel_subs")
         
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
         with st.form("subs_window_form", clear_on_submit=False):
+            
+                      
+ 
 
-            st.write("Cигнал")
-            selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub_one")
-            st.write("Геофони для аналізу")
-            selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="sel_subs")
+            # print(selected_ser1)
+            # breakpoint()
+
+
+            if selected_ser1:
+                st.subheader("Обрано серію "+selected_ser1)
+            
+            
 
             # Поля для введення мінімальної та максимальної частоти
             col1, col2 = st.columns(2)
             with col1:
-                subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=5.0, step=0.1, key='subs_min_time_sig')
+                subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=2.53, step=0.1, key='subs_min_time_sig')
             with col2:
-                subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=5.9, step=0.1, key='subs_max_time_sig')
+                subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=2.63, step=0.1, key='subs_max_time_sig')
             col1, col2 = st.columns(2)
             with col1:
-                subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=5.1, step=0.1, key='subs_min_time_noise')
+                subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=2.63, step=0.1, key='subs_min_time_noise')
             with col2:
-                subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=6.0, step=0.1, key='subs_max_time_noise')
+                subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=2.74, step=0.1, key='subs_max_time_noise')
+            
+            sig_len = subs_max_time_s-subs_min_time_s
+            noise_len = subs_max_time_n-subs_min_time_n
+            st.write(f"Довжина сигналу {sig_len:.4f} c")
+            st.write(f"Довжина шуму {noise_len:.4f} c")
             
             
-            seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.2, step=0.1, key='subs_nperseg')
-            overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.18, step=0.01, key='subs_noverlap')
+            seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, key='subs_nperseg')
+            overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, key='subs_noverlap')
             coherence_threshold = st.number_input("Поріг когерентності", min_value=0.0, value=0.8, step=0.1, key='subs_coher_thersh')
             
             
+          
+
+            plot_figs_s = st.checkbox("Побудувати графік амплітуда-час початкового сигналу", value=False, key='plot_figs_s')
+            plot_figs_n = st.checkbox("Побудувати графік амплітуда-час шуму", value=False, key='plot_figs_n')
+            plot_figs_r = st.checkbox("Побудувати графік амплітуда-час результату віднімання", value=False, key='plot_figs_r')
+            
+            plot_spectr_s = st.checkbox("Побудувати спектрограму початкового сигналу", value=False, key='plot_spectr_s')
+            plot_spectr_n = st.checkbox("Побудувати спектрограму шуму", value=False, key='plot_spectr_n')
+            plot_spectr_r = st.checkbox("Побудувати спектрограму результату віднімання", value=False, key='plot_spectr_r')
+            
+            plot_psd_s = st.checkbox("Побудувати PSD початкового сигналу", value=False, key='plot_psd_s')
+            plot_psd_n = st.checkbox("Побудувати PSD шуму", value=False, key='plot_psd_n')
+            plot_psd_r = st.checkbox("Побудувати PSD результату віднімання", value=False, key='plot_psd_r')
+            
+            plot_vpf_s = st.checkbox("Побудувати VPF початкового сигналу", value=False, key='plot_vpf_s')
+            plot_vpf_n = st.checkbox("Побудувати VPF шуму", value=False, key='plot_vpf_n')
+            plot_vpf_r = st.checkbox("Побудувати VPF результату віднімання", value=False, key='plot_vpf_r')
+            
+            # print(selected_ser1)
+            # breakpoint()
             
             submitted = st.form_submit_button("⚙️ Застосувати вікно")
             # Кнопка для запуску фільтрації
+            
+            # print(selected_ser1)
+            # print(st.session_state.selected_ser1)
+            # breakpoint()            
         if submitted:
+            
+            st.session_state.selected_ser1 = selected_ser1
+            st.write("Обрано серію "+selected_ser1)
+            
+            # print(selected_ser1)
+            # print(st.session_state.selected_ser1)
+            # breakpoint()       
+            
             noisy_sig_df = st.session_state.dfs[selected_ser1][selected_geoph]
             noisy_sig_df_cut = ssp.cut_dataframe_time_window(noisy_sig_df, fs=fs, start_time=subs_min_time_s, end_time=subs_max_time_s)
             ref_noise_df_cut = ssp.cut_dataframe_time_window(noisy_sig_df, fs=fs, start_time=subs_min_time_n, end_time=subs_max_time_n)
@@ -355,11 +414,13 @@ with tab8:
             st.session_state.plot_flag = True
             
             cleaned_sig_df = pd.DataFrame(data_geoph)
-            st.session_state.dfs[selected_ser1+"_subtract_cut"] = cleaned_sig_df
+            st.session_state.dfs[st.session_state.selected_ser1+"_subtract_cut"] = cleaned_sig_df
   
             st.session_state.noisy_sig_plot = noisy_sig_df_cut
             st.session_state.ref_noise_plot = ref_noise_df_cut
             st.session_state.res_signal = cleaned_sig_df
+            
+            selected_ser1 = None
 
                 
     
@@ -375,9 +436,14 @@ with tab8:
                 selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="sel_sub2")        
                 st.write("Геофони для аналізу")
                 selected_geoph = st.multiselect("Оберіть геофони для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'], default=['X1', 'X2', 'X3', 'Z1', 'Z2', 'Z3'],key="sel_subs")
+                
+                
+                
                 submitted = st.form_submit_button("⚙️ Застосувати параметри")
                 
         if submitted:
+            
+            st.session_state.selected_ser1 = selected_ser1
             
             for geoph in selected_geoph: # ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']: 
                 signal, _, _, _, _, _, _ = ssp.coherent_subtraction_aligned_with_mask(st.session_state.dfs[selected_ser1][geoph], st.session_state.dfs[selected_ser2][geoph], seg_len_s=None, overlap_s=None,coherence_threshold=0.7)
@@ -397,147 +463,124 @@ with tab8:
 
     
     if st.session_state.plot_flag:
-    
-        with st.form("subs_result_window_form", clear_on_submit=False):
+        
+        df = ssp.vpf_df(st.session_state.res_signal, fs)                        
+        if subs_mode == "Дві серії":
+            st.session_state.dfs_vpf[st.session_state.selected_ser1+"_subtract_vpf"] = df
+        if subs_mode == "Одна серія":
+            st.session_state.dfs_vpf[st.session_state.selected_ser1+"_subtract_cut_vpf"] = df
+            
+        signal_vpf = ssp.vpf_df(st.session_state.noisy_sig_plot, fs)
+        noise_vpf = ssp.vpf_df(st.session_state.ref_noise_plot, fs)                         
+        snr_df = ssp.compute_snr_df(signal_vpf, noise_vpf)
+        st.subheader("Відношення SNR")
+        st.dataframe(snr_df)
 
-            plot_figs_s = st.checkbox("Побудувати графік амплітуда-час початкового сигналу", value=False, key='plot_figs_s')
-            plot_figs_n = st.checkbox("Побудувати графік амплітуда-час шуму", value=False, key='plot_figs_n')
-            plot_figs_r = st.checkbox("Побудувати графік амплітуда-час результату віднімання", value=False, key='plot_figs_r')
+    
+        st.subheader("Результат когерентного віднімання")
+        if len(df):
             
-            plot_spectr_s = st.checkbox("Побудувати спектрограму початкового сигналу", value=False, key='plot_spectr_s')
-            plot_spectr_n = st.checkbox("Побудувати спектрограму шуму", value=False, key='plot_spectr_n')
-            plot_spectr_r = st.checkbox("Побудувати спектрограму результату віднімання", value=False, key='plot_spectr_r')
-            
-            plot_psd_s = st.checkbox("Побудувати PSD початкового сигналу", value=False, key='plot_psd_s')
-            plot_psd_n = st.checkbox("Побудувати PSD шуму", value=False, key='plot_psd_n')
-            plot_psd_r = st.checkbox("Побудувати PSD результату віднімання", value=False, key='plot_psd_r')
-            
-            plot_vpf_s = st.checkbox("Побудувати VPF початкового сигналу", value=False, key='plot_vpf_s')
-            plot_vpf_n = st.checkbox("Побудувати VPF шуму", value=False, key='plot_vpf_n')
-            plot_vpf_r = st.checkbox("Побудувати VPF результату віднімання", value=False, key='plot_vpf_r')
-            
-            
-            submitted = st.form_submit_button("⚙️ Відобразити результати")
-            # Кнопка для запуску фільтрації
-        if submitted:
-            
-            st.subheader("Результат когерентного віднімання")
-            if len(df):
+            st.subheader("Серія сигналу: "+st.session_state.selected_ser1)
+            if plot_figs_s or plot_figs_n or plot_figs_r:
+
+                st.subheader("Графік амплітуда-час")
+                one_plot_subs = st.checkbox("Показати всі геофони на одному графіку", value=True, key='one_plot_subs')
+                
+                if plot_figs_s: 
+                    st.subheader("Початковий сигнал")
+                    if one_plot_subs:
+                        st.plotly_chart(ssp.plot_time_signals(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly_one"), use_container_width=True, key='plot_one_subs_s'+filename)
+                    else:
+                        st.plotly_chart(ssp.plot_time_signals(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly"), use_container_width=True, key='plot_many_subs_s'+filename)
+
+                if plot_figs_n: 
+                    st.subheader("Шум")
+                    if one_plot_subs:
+                        st.plotly_chart(ssp.plot_time_signals(st.session_state.ref_noise_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly_one"), use_container_width=True, key='plot_one_subs_n'+filename)
+                    else:
+                        st.plotly_chart(ssp.plot_time_signals(st.session_state.ref_noise_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly"), use_container_width=True, key='plot_many_subs_n'+filename)
+
+                if plot_figs_r: 
+                    st.subheader("Результат віднімання")
+                    if one_plot_subs:
+                        st.plotly_chart(ssp.plot_time_signals(st.session_state.res_signal, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly_one"), use_container_width=True, key='plot_one_subs_r'+filename)
+                    else:
+                        st.plotly_chart(ssp.plot_time_signals(st.session_state.res_signal, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly"), use_container_width=True, key='plot_many_subs_r'+filename)
+
+
+            if plot_spectr_s or plot_spectr_n or plot_spectr_r:
+
+                st.subheader("Спектрограмма")
+                
+                if plot_spectr_s: 
+                    st.subheader("Початковий сигнал")
+                   
+                    st.pyplot(ssp.spectr_plot(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
+                   
+
+                if plot_spectr_n: 
+                    st.subheader("Шум")
+                    
+                    st.pyplot(ssp.spectr_plot(st.session_state.ref_noise_plot, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
+                    
+                if plot_spectr_r: 
+                    st.subheader("Результат віднімання")
+                    st.pyplot(ssp.spectr_plot(st.session_state.res_signal, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
+                    
+
+            if plot_psd_s or plot_psd_n or plot_psd_r:
+
+                st.subheader("Графік PSD")
+                db_scale_subs = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale_subs')
+                
+                if plot_psd_s: 
+                    st.subheader("Початковий сигнал")
+                    if db_scale_subs:
+                        st.plotly_chart(ssp.psd_plot_df(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True, key='plot_sub_psd1_s'+filename)
+                    else:
+                        st.plotly_chart(ssp.psd_plot_df(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True, key='plot_sub_psd2_s'+filename)
+
+                if plot_psd_n: 
+                    st.subheader("Шум")
+                    if db_scale_subs:
+                        st.plotly_chart(ssp.psd_plot_df(st.session_state.ref_noise_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True, key='plot_sub_psd1_n'+filename)
+                    else:
+                        st.plotly_chart(ssp.psd_plot_df(st.session_state.ref_noise_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True, key='plot_sub_psd2_n'+filename)
+
+                if plot_psd_r: 
+                    st.subheader("Результат віднімання")
+                    if db_scale_subs:
+                        st.plotly_chart(ssp.psd_plot_df(st.session_state.res_signal, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True, key='plot_sub_psd1_r'+filename)
+                    else:
+                        st.plotly_chart(ssp.psd_plot_df(st.session_state.res_signal, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True, key='plot_sub_psd2_r'+filename)
+
+            if plot_vpf_s or plot_vpf_n or plot_vpf_r:
+
+                st.subheader("VPF")
                 
                 
-                if plot_figs_s or plot_figs_n or plot_figs_r:
-
-                    st.subheader("Графік амплітуда-час")
-                    one_plot_subs = st.checkbox("Показати всі геофони на одному графіку", value=True, key='one_plot_subs')
-                    
-                    if plot_figs_s: 
-                        st.subheader("Початковий сигнал")
-                        if one_plot_subs:
-                            st.plotly_chart(ssp.plot_time_signals(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly_one"), use_container_width=True, key='plot_one_subs_s'+filename)
-                        else:
-                            st.plotly_chart(ssp.plot_time_signals(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly"), use_container_width=True, key='plot_many_subs_s'+filename)
-    
-                    if plot_figs_n: 
-                        st.subheader("Шум")
-                        if one_plot_subs:
-                            st.plotly_chart(ssp.plot_time_signals(st.session_state.ref_noise_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly_one"), use_container_width=True, key='plot_one_subs_n'+filename)
-                        else:
-                            st.plotly_chart(ssp.plot_time_signals(st.session_state.ref_noise_plot, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly"), use_container_width=True, key='plot_many_subs_n'+filename)
-
-                    if plot_figs_r: 
-                        st.subheader("Результат віднімання")
-                        if one_plot_subs:
-                            st.plotly_chart(ssp.plot_time_signals(st.session_state.res_signal, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly_one"), use_container_width=True, key='plot_one_subs_r'+filename)
-                        else:
-                            st.plotly_chart(ssp.plot_time_signals(st.session_state.res_signal, fs, n_cols=n_cols, threshold=0.5, columns=selected_geoph, mode="plotly"), use_container_width=True, key='plot_many_subs_r'+filename)
-
-
-                if plot_spectr_s or plot_spectr_n or plot_spectr_r:
-
-                    st.subheader("Спектрограмма")
-                    
-                    if plot_spectr_s: 
-                        st.subheader("Початковий сигнал")
-                       
-                        st.pyplot(ssp.spectr_plot(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
-                       
-    
-                    if plot_spectr_n: 
-                        st.subheader("Шум")
-                        
-                        st.pyplot(ssp.spectr_plot(st.session_state.ref_noise_plot, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
-                        
-                    if plot_spectr_r: 
-                        st.subheader("Результат віднімання")
-                        st.pyplot(ssp.spectr_plot(st.session_state.res_signal, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
-                        
-
-                if plot_psd_s or plot_psd_n or plot_psd_r:
-
-                    st.subheader("Графік PSD")
-                    db_scale_subs = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale_subs')
-                    
-                    if plot_psd_s: 
-                        st.subheader("Початковий сигнал")
-                        if db_scale_subs:
-                            st.plotly_chart(ssp.psd_plot_df(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True, key='plot_sub_psd1_s'+filename)
-                        else:
-                            st.plotly_chart(ssp.psd_plot_df(st.session_state.noisy_sig_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True, key='plot_sub_psd2_s'+filename)
-    
-                    if plot_psd_n: 
-                        st.subheader("Шум")
-                        if db_scale_subs:
-                            st.plotly_chart(ssp.psd_plot_df(st.session_state.ref_noise_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True, key='plot_sub_psd1_n'+filename)
-                        else:
-                            st.plotly_chart(ssp.psd_plot_df(st.session_state.ref_noise_plot, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True, key='plot_sub_psd2_n'+filename)
-
-                    if plot_psd_r: 
-                        st.subheader("Результат віднімання")
-                        if db_scale_subs:
-                            st.plotly_chart(ssp.psd_plot_df(st.session_state.res_signal, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True, key='plot_sub_psd1_r'+filename)
-                        else:
-                            st.plotly_chart(ssp.psd_plot_df(st.session_state.res_signal, fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True, key='plot_sub_psd2_r'+filename)
-
-                if plot_vpf_s or plot_vpf_n or plot_vpf_r:
-
-                    st.subheader("VPF")
-                    
-                    
-                    
-                    if plot_vpf_s: 
-                        st.subheader("Початковий сигнал")
-                        df = ssp.vpf_df(st.session_state.noisy_sig_plot, fs)
-                        st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_s'+filename)
-                       
-    
-                    if plot_vpf_n: 
-                        st.subheader("Шум")
-                        df = ssp.vpf_df(st.session_state.ref_noise_plot, fs)
-                        st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_n'+filename)
-                        
-                    if plot_vpf_r: 
-                        st.subheader("Результат віднімання")
-                        df = ssp.vpf_df(st.session_state.res_signal, fs)
-                        st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_r'+filename)
-
-        
-        
-        
                 
-                # st.subheader("Спектрограма")
-                # st.pyplot(ssp.spectr_plot(df, fs, n_cols=n_cols, columns=selected_geoph), use_container_width=True)
-                # st.subheader("Графік PSD")
-                # db_scale_subs = st.checkbox("Показати в шкалі децибел, дБ", value=True, key='db_scale_subs')
-                # if db_scale_subs:
-                #     st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='db'), use_container_width=True,key="plot_sub_psd1")
-                # else:
-                #     st.plotly_chart(ssp.psd_plot_df(df, fs=fs, n_cols=n_cols, columns=selected_geoph, mode='plotly', scale='energy'), use_container_width=True,key="plot_sub_psd2")
-            
+                if plot_vpf_s: 
+                    st.subheader("Початковий сигнал")
+                    df = ssp.vpf_df(st.session_state.noisy_sig_plot, fs)
+                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_s'+filename)
+                   
+
+                if plot_vpf_n: 
+                    st.subheader("Шум")
+                    df = ssp.vpf_df(st.session_state.ref_noise_plot, fs)
+                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_n'+filename)
+                    
+                if plot_vpf_r: 
+                    st.subheader("Результат віднімання")
+                    df = ssp.vpf_df(st.session_state.res_signal, fs)
+                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_r'+filename)
+
 
 
 # === Вкладка 9: Уявна енергія ===
 with tab9:
-    st.subheader("Обчислення векторной поляризаційної фільтрації")
+    st.subheader("Обчислення векторної поляризаційної фільтрації")
     
     if len(st.session_state.dfs)>0:
 
@@ -620,8 +663,9 @@ with tab9:
                 print(Pxx[0])
                 rms_psd, range_freq_val = ssp.rms_in_band(f[0], Pxx[0], min_freq_psd, max_freq_psd)
                 st.subheader(f"🎚️ RMS PSD дорівнює {rms_psd} в діапазоні від {range_freq_val[0]} Гц до {range_freq_val[1]} Гц")
-                
-        
+
+
+
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
         with st.form("vpf_window_form", clear_on_submit=False):
@@ -643,15 +687,17 @@ with tab9:
             signal = ssp.cut_dataframe_time_window(im_power_df, fs, min_time_s, max_time_s)
             noise = ssp.cut_dataframe_time_window(im_power_df, fs, min_time_n, max_time_n)
             
-            signal_db = 10*np.log10(np.mean(signal**2)+10**(-12))
-            noise_db = 10*np.log10(np.mean(noise**2)+10**(-12))
+            signal_db = 10*np.log10((np.mean(signal**2))**(1/2)+10**(-12))
+            noise_db = 10*np.log10((np.mean(noise**2))**(1/2)+10**(-12))
             
-            snr = signal_db-noise_db
+            # snr = (np.mean(signal**2))**(1/2)/(np.mean(noise**2))**(1/2)
+            snr = ssp.compute_snr_df(signal, noise)
             
             
-            st.subheader("RMS сигналу = " + str(signal_db) + " Дб")
-            st.subheader("RMS шуму = " + str(noise_db ) + " Дб")
-            st.subheader("Відношення SNR = " + str(snr) + " Дб")
+            st.subheader("RMS сигналу = " + str(signal_db) + " дБ")
+            st.subheader("RMS шуму = " + str(noise_db ) + " дБ")
+            st.subheader("Відношення SNR")
+            st.dataframe(snr)
             st.subheader("Графік Ганкеля виділенного вікном сигналу")
             st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series+'Vr'][str(seismometr)])[0], 
                                             np.array(VrVz_dict[series+'Vz'][str(seismometr)])[0], 
@@ -663,58 +709,134 @@ with tab9:
 
 # === Вкладка 10: Математична модель сонара ===
 with tab10:
-    st.subheader("Математична модель сонара")
+    st.subheader("Математична модель затухання")
+    st.subheader("Виконайте когерентне віднімання. Побудуйте діаграму VPF")
 
-    # if len(st.session_state.dfs)>0:
-
-    #     st.write("Cигнал")
-    #     selected_ser1 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()), key="mat_ser1")
-    #     #selected_seism1 = st.selectbox("Оберіть типи геофонів для відображення зі списку:", ['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3'],key="select12")
-    #     st.write("Шум")
-    #     selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()), key="mat_ser2")        
-    #     st.write("Сейсмометр для якого буде виконано аналіз")
-    #     seismometr = int(st.number_input("Оберіть сейсмометр для подальшого аналізу", min_value=1.0, max_value=3.0, value=1.0, step=1.0, key="mat_seism"))
-
-    #     rho = float(st.number_input("Густина грунта, кг/м³", min_value=0.0, value=2500.0, step=10.0, key="mat_rho"))
-
-    #     VrVz_dict = {}
-
-    #     for i, (filename, data) in enumerate(st.session_state.dfs.items()):
-    #         # st.write("Файл ", filename, " індекс серії  ", str(i+1))
-    #         # st.subheader(str(i))
-    #         if 'X1' in list(data.columns):
-    
-    #             Vr1 = []
-    #             Vr2 = []
-    #             Vr3 = []
-    #             Vz1 = []
-    #             Vz2 = []
-    #             Vz3 = []
-    #             # st.write(i)
-    #             # st.write(filename)
-    #             Vr1.append(ssp.compute_radial(data['X1'], data['Y11'], data['Y12'], angl1))
-    #             Vr2.append(ssp.compute_radial(data['X2'], data['Y21'], data['Y22'], angl2))
-    #             Vr3.append(ssp.compute_radial(data['X3'], data['Y31'], data['Y32'], angl2))
-    #             Vz1.append(data['Z1'])
-    #             Vz2.append(data['Z2'])
-    #             Vz3.append(data['Z3'])
-    #             Vr = {'1':Vr1, '2':Vr2, '3':Vr3}
-    #             Vz = {'1':Vz1, '2':Vz2, '3':Vz3}
-    #             VrVz_dict[filename+'Vr'] = Vr
-    #             VrVz_dict[filename+'Vz'] = Vz
-                
+    if len(st.session_state.dfs_vpf)>0:
         
-    #     print('tab9')
-    #     print(np.array(VrVz_dict[selected_ser1+'Vr'][str(seismometr)])[0])
-    #     print(np.array(VrVz_dict[selected_ser1+'Vz'][str(seismometr)])[0])
-    #     ls_signal = ssp.energy_density(np.array(VrVz_dict[selected_ser1+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[selected_ser1+'Vz'][str(seismometr)])[0], rho)
-    #     ls_noise = ssp.energy_density(np.array(VrVz_dict[selected_ser2+'Vr'][str(seismometr)])[0], np.array(VrVz_dict[selected_ser2+'Vz'][str(seismometr)])[0], rho)
-        
-    #     st.subheader("Щільність енергії джерела, ДБ")
-    #     st.subheader(ls_signal)
-    #     st.subheader("Щільність енергії шуму, ДБ")
-    #     st.subheader(ls_noise)
-    #     st.subheader("SNR")
-    #     st.subheader(ls_signal-ls_noise)
-    
-    
+        with st.form("model_window_form", clear_on_submit=False):
+
+            st.write("Перша частина серії. Оберіть серію з суффіксом _vpf")
+            selected_ser1 = st.selectbox("Оберіть серію №1 для відображення зі списку:", list(st.session_state.dfs_vpf.keys()), key="mat_ser1")        
+            st.write("Друга частина серії. Оберіть серію з суффіксом _vpf")
+            selected_ser2 = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs_vpf.keys()), key="mat_ser2")        
+            st.write("Вкажіть відстані до сейсмометрів серій")
+            seismometr1 = float(st.number_input("Вкажіть відстань №1", min_value=1.0, max_value=20.0, value=3.0, step=1.0, key="mat_seism1"))
+            seismometr2 = float(st.number_input("Вкажіть відстань №2", min_value=1.0, max_value=20.0, value=5.0, step=1.0, key="mat_seism2"))
+            seismometr3 = float(st.number_input("Вкажіть відстань №3", min_value=1.0, max_value=20.0, value=7.5, step=1.0, key="mat_seism3"))
+            seismometr4 = float(st.number_input("Вкажіть відстань №4", min_value=1.0, max_value=20.0, value=10.0, step=1.0, key="mat_seism4"))
+            seismometr5 = float(st.number_input("Вкажіть відстань №5", min_value=1.0, max_value=20.0, value=12.5, step=1.0, key="mat_seism5"))
+            seismometr6 = float(st.number_input("Вкажіть відстань №6", min_value=1.0, max_value=20.0, value=15.0, step=1.0, key="mat_seism6"))
+            
+            db_scale_model = st.checkbox("Показати в шкалі децибел, дБ", value=False, key='db_scale_model')
+            
+            submitted = st.form_submit_button("⚙️ Розрахувати")
+            
+        if submitted:
+            
+            
+            
+            min_freq_list = [30, 50, 70, 90, 110, 130, 150, 170, 190, 210, 230, 250, 270]
+            max_freq_list = [50, 70, 90, 110, 130, 150, 170, 190, 210, 230, 250, 270, 290]
+            
+            index_labels = [f"{min_}-{max_}" for min_, max_ in zip(min_freq_list, max_freq_list)]
+
+            # st.session_state.dfs[selected_ser1] - вибрана серія, що містить 3 колонки значень після VPF
+            
+            df_vpf_dict = {}
+            
+            
+            seismometr_list = [seismometr1, seismometr2, seismometr3,
+                               seismometr4, seismometr5, seismometr6]
+            i = 0
+            for col in ['im_power1', 'im_power2', 'im_power3']:
+                seism_freq_vals1 = []
+                seism_freq_vals2 = []
+                for min_freq, max_freq in zip(min_freq_list, max_freq_list):
+                    
+                    f1, Pxx1 = ssp.psd_plot_df(st.session_state.dfs_vpf[selected_ser1], fs=fs, n_cols=1, columns=[col], mode='matrix', scale='energy')                
+                    rms1, range_freq_val1 = ssp.rms_in_band(f1[0], Pxx1[0], min_freq, max_freq)        
+                    seism_freq_vals1.append(float(rms1))
+                    
+                    f2, Pxx2 = ssp.psd_plot_df(st.session_state.dfs_vpf[selected_ser2], fs=fs, n_cols=1, columns=[col], mode='matrix', scale='energy')                
+                    rms2, range_freq_val2 = ssp.rms_in_band(f2[0], Pxx2[0], min_freq, max_freq)        
+                    seism_freq_vals2.append(float(rms2))
+                    
+                    print(st.session_state.dfs_vpf[selected_ser1])
+                    print(st.session_state.dfs_vpf[selected_ser2])
+                    
+                print(seism_freq_vals1)
+                print(seism_freq_vals2)
+                    
+                df_vpf_dict[seismometr_list[i]] = seism_freq_vals1         
+                df_vpf_dict[seismometr_list[i+3]] = seism_freq_vals2         
+                i = i + 1
+            
+            
+            df_vpf = pd.DataFrame({k: df_vpf_dict[k] for k in sorted(df_vpf_dict)})
+            df_vpf.index = index_labels
+            
+            print(df_vpf_dict)
+            print(df_vpf)
+            
+            
+            
+            st.subheader("RMS від PSD сигналу на фіксованих відстанях після VPF на фіксованій частоті")
+            if db_scale_model:
+                st.dataframe(ssp.to_decibels(df_vpf), height=495)
+            else:
+                st.dataframe(df_vpf.style.format("{:.4e}"), height=495)
+            
+            st.subheader("Питомі втрати на фіксованих відстанях після VPF на фіксованої частоті")
+            
+            selected_col = st.selectbox("Оберіть відстань як базову для визначення затухання (зазвичай найменша)", list(df_vpf.columns), key="mat_sel_col")        
+            
+            # Відняти значення стовпця від усіх інших стовпців (покроково)
+            # df_vpf_sub = df_vpf.drop(columns=selected_col).subtract(df_vpf[selected_col], axis=0)
+            
+            df_vpf_sub = df_vpf.drop(columns=selected_col).divide(df_vpf[selected_col], axis=0)
+            
+            if db_scale_model:
+                st.dataframe(ssp.to_decibels(df_vpf_sub), height=495)
+            else:
+                st.dataframe(df_vpf_sub.style.format("{:.4e}"), height=495)
+            
+            st.subheader("Теоретичні коефіцієнти затухання амплітуд в залежності від відстані. Втрати на розповсюдження")
+            
+            seismometr_dist = [x - seismometr_list[0] for x in seismometr_list]
+            
+            df_wave_diminish_cols = [x for x in seismometr_dist if x>0]
+            
+            wave_diminish = [1/x for x in df_wave_diminish_cols]
+            
+            print(seismometr_dist)
+            print(df_wave_diminish_cols)
+            print(wave_diminish)
+            
+            df_wave_diminish = pd.DataFrame(wave_diminish)
+            df_wave_diminish = df_wave_diminish.T
+            df_wave_diminish.columns = df_wave_diminish_cols
+            
+            
+            if db_scale_model:
+                st.dataframe(ssp.to_decibels(df_wave_diminish))
+            else:
+                st.dataframe(df_wave_diminish)
+            
+            st.subheader("Емпіричні коефіцієнти затухання амплітуд в залежності від відстані. Втрати на розповсюдження")
+            
+            df_wave_diminish_emp = pd.DataFrame(df_vpf_sub.mean())
+            df_wave_diminish_emp = df_wave_diminish_emp.T
+            df_wave_diminish_emp.columns = df_wave_diminish_cols
+            
+            
+            if db_scale_model:
+                st.dataframe(ssp.to_decibels(df_wave_diminish_emp))
+            else:
+                st.dataframe(df_wave_diminish_emp)
+
+
+            
+            
+            
+            
