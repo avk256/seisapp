@@ -653,14 +653,14 @@ with tab10:
 
             col1, col2 = st.columns(2)
             with col1:
-                subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=2.53, step=0.1, key='subs_min_time_sig')
+                subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=2.53, step=0.1, format="%.4f" , key='subs_min_time_sig')
             with col2:
-                subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=2.63, step=0.1, key='subs_max_time_sig')
+                subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=2.63, step=0.1, format="%.4f", key='subs_max_time_sig')
             col1, col2 = st.columns(2)
             with col1:
-                subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=2.63, step=0.1, key='subs_min_time_noise')
+                subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=2.63, step=0.1, format="%.4f", key='subs_min_time_noise')
             with col2:
-                subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=2.74, step=0.1, key='subs_max_time_noise')
+                subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=2.74, step=0.1, format="%.4f", key='subs_max_time_noise')
             
             sig_len = subs_max_time_s-subs_min_time_s
             noise_len = subs_max_time_n-subs_min_time_n
@@ -668,8 +668,8 @@ with tab10:
             st.write(f"Довжина шуму {noise_len:.4f} c")
             
             
-            seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, key='subs_nperseg')
-            overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, key='subs_noverlap')
+            seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='subs_nperseg')
+            overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='subs_noverlap')
 
             st.write("Поріг чутливості маски когерентності") 
             st.write("Менше значення (~0.0) → маска чутливіша, більше частот вважаються когерентними → агресивніше приглушення.")
@@ -786,14 +786,14 @@ with tab10:
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=0.0, step=0.1, key='subs_min_time_sig2')
+                    subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_min_time_sig2')
                 with col2:
-                    subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=0.0, step=0.1, key='subs_max_time_sig2')
+                    subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_max_time_sig2')
                 col1, col2 = st.columns(2)
                 with col1:
-                    subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=0.0, step=0.1, key='subs_min_time_noise2')
+                    subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_min_time_noise2')
                 with col2:
-                    subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=0.0, step=0.1, key='subs_max_time_noise2')
+                    subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_max_time_noise2')
                 
                 sig_len = subs_max_time_s-subs_min_time_s
                 noise_len = subs_max_time_n-subs_min_time_n
@@ -801,8 +801,8 @@ with tab10:
                 st.write(f"Довжина шуму {noise_len:.4f} c")
                 
                 
-                seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, key='subs_nperseg2')
-                overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, key='subs_noverlap2')
+                seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='subs_nperseg2')
+                overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='subs_noverlap2')
 
 
                 st.write("Поріг чутливості маски когерентності") 
@@ -999,23 +999,25 @@ with tab10:
 
                 st.subheader("VPF")
                 
-                
+                print(st.session_state.im_geoph_list)
+                print(list(set(st.session_state.im_geoph_list) - {'im_power'}))
+                # breakpoint()
                 
                 if plot_vpf_s: 
                     st.subheader("Початковий сигнал")
                     df = ssp.vpf_df(st.session_state.noisy_sig_plot, fs)
-                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols_plots, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_s'+filename)
+                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols_plots, threshold=0.5, columns=list(set(st.session_state.im_geoph_list) - {'im_power'}), mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_s'+filename)
                    
 
                 if plot_vpf_n: 
                     st.subheader("Шум")
                     df = ssp.vpf_df(st.session_state.ref_noise_plot, fs)
-                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols_plots, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_n'+filename)
+                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols_plots, threshold=0.5, columns=list(set(st.session_state.im_geoph_list) - {'im_power'}), mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_n'+filename)
                     
                 if plot_vpf_r: 
                     st.subheader("Результат віднімання")
                     df = ssp.vpf_df(st.session_state.res_signal, fs)
-                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols_plots, threshold=0.5, columns=['im_power1', 'im_power2', 'im_power3'], mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_r'+filename)
+                    st.plotly_chart(ssp.plot_time_signals(df, fs, n_cols=n_cols_plots, threshold=0.5, columns=list(set(st.session_state.im_geoph_list) - {'im_power'}), mode="plotly_one"), use_container_width=True, key='plot_one_vpf_subs_r'+filename)
 
 
 
