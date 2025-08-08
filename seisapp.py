@@ -618,18 +618,19 @@ with tab8:
             df1 = ssp.cut_dataframe_time_window(df1, fs=fs, start_time=coher_min_time_s1, end_time=coher_max_time_s1)
             df2 = ssp.cut_dataframe_time_window(df2, fs=fs, start_time=coher_min_time_s2, end_time=coher_max_time_s2)
             
-            
+            sig1 = np.array(df1)
+            sig2 = np.array(df2)
             
                 
-            st.plotly_chart(ssp.plot_coherence(df1, 
-                                               df2, 
+            st.plotly_chart(ssp.plot_coherence(sig1, 
+                                               sig2, 
                                                fs, f"{selected_ser1_coher}, {selected_seism1_coher}", f"{selected_ser2_coher}, {selected_seism2_coher}", 
                                                mode='plotly', type_plot=type_plot,
                                                nperseg=coher_nperseg, noverlap=coher_noverlap,
                                                ), use_container_width=True, key='plot_coher')
 
 
-            f, Cxy = ssp.plot_coherence(df1, df2, fs, f"{selected_ser1_coher}, {selected_seism1_coher}", f"{selected_ser2_coher}, {selected_seism2_coher}", 
+            f, Cxy = ssp.plot_coherence(sig1, sig2, fs, f"{selected_ser1_coher}, {selected_seism1_coher}", f"{selected_ser2_coher}, {selected_seism2_coher}", 
                                                mode='matrix', type_plot="linear",
                                                nperseg=coher_nperseg, noverlap=coher_noverlap,
                                                )
