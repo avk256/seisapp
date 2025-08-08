@@ -193,9 +193,9 @@ with st.sidebar:
         # Поля для введення мінімальної та максимальної частоти
         col1, col2 = st.columns(2)
         with col1:
-            min_time = st.number_input("🔻 min час", min_value=0.0, value=1.0, step=1.0, key='min_time')
+            min_time = st.number_input("🔻 min час", min_value=0.0, value=1.0, step=1.0, format="%.4f", key='min_time')
         with col2:
-            max_time = st.number_input("🔺 max час", min_value=0.0, value=10.0, step=1.0, key='max_time')
+            max_time = st.number_input("🔺 max час", min_value=0.0, value=10.0, step=1.0, format="%.4f", key='max_time')
         
         # Кнопка для запуску фільтрації
         if st.button("⚙️ Застосувати вікно"):
@@ -228,7 +228,7 @@ with st.sidebar:
 
 
 # === Вкладки ===
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.tabs(["📈 Дані", 
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12, tab13 = st.tabs(["📈 Дані", 
                                                                                      "📊 Графіки серій", 
                                                                                      "📊 Графіки між серіями", 
                                                                                      "Спектр", 
@@ -239,6 +239,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11, tab12 = st.t
                                                                                      "Когерентне підсумовування",
                                                                                      "Когерентне віднімання", 
                                                                                      "ВПФ", 
+                                                                                     "Азимутальна когерентність",
                                                                                      "Математична модель сонара"])
 
 
@@ -469,8 +470,8 @@ with tab4:
     st.subheader("Спектрограми. Представлення у домені частота-час")
     
     with st.form("spectr_window_form", clear_on_submit=False):
-        seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1, key='nperseg')
-        overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01, key='noverlap')
+        seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=None, step=0.1, format="%.4f", key='nperseg')
+        overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=None, step=0.01, format="%.4f", key='noverlap')
         submitted = st.form_submit_button("⚙️ Застосувати параметри")
     
     
@@ -559,14 +560,89 @@ with tab8:
 
     if len(st.session_state.dfs)>0:
 
-        st.write("1й сигнал")
-        selected_ser1_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser1")
-        selected_seism1_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list,key="coh_sel_seism1")
-        st.write("2й сигнал")
-        selected_ser2_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser2")
-        selected_seism2_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list,key="coh_sel_seism2")
-        st.plotly_chart(ssp.plot_coherence(st.session_state.dfs[selected_ser1_coher][selected_seism1_coher], st.session_state.dfs[selected_ser2_coher][selected_seism2_coher], fs, f"{selected_ser1_coher}, {selected_seism1_coher}", f"{selected_ser2_coher}, {selected_seism2_coher}", mode='plotly'), use_container_width=True, key='plot_coher')
         
+        with st.form("coher_window_form", clear_on_submit=False): 
+                        
+            st.write("1й сигнал")
+            selected_ser1_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser1")
+            selected_seism1_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list,key="coh_sel_seism1")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                coher_min_time_s1 = st.number_input("🔻 Початок сигналу", format="%.4f", min_value=0.0, value=0.0, step=0.1, key='coher_min_time_sig1')
+            with col2:
+                coher_max_time_s1 = st.number_input("🔺 Кінець сигналу", format="%.4f", min_value=0.0, value=1.0, step=0.1, key='coher_max_time_sig1')
+           
+            st.write("2й сигнал")
+            selected_ser2_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser2")
+            selected_seism2_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list,key="coh_sel_seism2")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                coher_min_time_s2 = st.number_input("🔻 Початок сигналу", format="%.4f", min_value=0.0, value=0.0, step=0.1, key='coher_min_time_sig2')
+            with col2:
+                coher_max_time_s2 = st.number_input("🔺 Кінець сигналу", format="%.4f", min_value=0.0, value=1.0, step=0.1, key='coher_max_time_sig2')
+
+                    
+            type_plot = st.selectbox("Оберіть тип відображення зі списку:", ["linear", "log"], key="coh_type_plot")
+            
+            coher_seg_len_s = st.number_input("Довжина одного сегмента, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='coher_nperseg')
+            coher_overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='coher_noverlap')
+
+            st.write("Діапазон частот для обчислення метрики")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                min_freq_coher = st.number_input("🔻 Мінімальна частота", min_value=0.0, value=20.0, step=1.0,  key='min_freq_coher')
+                
+            with col2:
+                max_freq_coher = st.number_input("🔺 Максимальна частота", min_value=0.0, value=50.0, step=1.0, key='max_freq_coher')
+                
+
+
+
+            submitted = st.form_submit_button("⚙️ Побудувати графіки")
+    
+            
+        if submitted:
+                
+            coher_nperseg = int(coher_seg_len_s * fs)
+            coher_noverlap = int(coher_overlap_s * fs)
+
+            df1 = st.session_state.dfs[selected_ser1_coher][selected_seism1_coher]
+            df2 = st.session_state.dfs[selected_ser2_coher][selected_seism2_coher]
+            
+            df2 = df2[:len(df1)]
+                    
+                
+            df1 = ssp.cut_dataframe_time_window(df1, fs=fs, start_time=coher_min_time_s1, end_time=coher_max_time_s1)
+            df2 = ssp.cut_dataframe_time_window(df2, fs=fs, start_time=coher_min_time_s2, end_time=coher_max_time_s2)
+            
+            
+            
+                
+            st.plotly_chart(ssp.plot_coherence(df1, 
+                                               df2, 
+                                               fs, f"{selected_ser1_coher}, {selected_seism1_coher}", f"{selected_ser2_coher}, {selected_seism2_coher}", 
+                                               mode='plotly', type_plot=type_plot,
+                                               nperseg=coher_nperseg, noverlap=coher_noverlap,
+                                               ), use_container_width=True, key='plot_coher')
+
+
+            f, Cxy = ssp.plot_coherence(df1, df2, fs, f"{selected_ser1_coher}, {selected_seism1_coher}", f"{selected_ser2_coher}, {selected_seism2_coher}", 
+                                               mode='matrix', type_plot="linear",
+                                               nperseg=coher_nperseg, noverlap=coher_noverlap,
+                                               )
+
+
+            print(f)
+            print(Cxy)
+            rms_coher, range_freq_val_coher = ssp.rms_in_band(f, Cxy, min_freq_coher, max_freq_coher)
+            st.subheader(f"🎚️ RMS когерентності дорівнює {rms_coher} в діапазоні від {range_freq_val_coher[0]} Гц до {range_freq_val_coher[1]} Гц")
+            
+
+
+
 
 # === Вкладка 9: Когерентне підсумовування сигналів сейсмометрів ===
 with tab9:
@@ -1071,51 +1147,65 @@ with tab11:
         im_power_df = pd.DataFrame({'im_power':im_power})
         # st.session_state.dfs[series+"_vpf"] = im_power_df
         
+        ####### ------------- Розрахунок спектру та PSD на основі вікна з сигналом
+
+        
+        # Поля для введення мінімальної та максимальної частоти
+        col1, col2 = st.columns(2)
+        with col1:
+            vpf_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=1.0, step=0.1, format="%.4f", key='min_time_sig1')
+        with col2:
+            vpf_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=10.0, step=0.1, format="%.4f", key='max_time_sig1')
+            
+        vpf_cut = ssp.cut_dataframe_time_window(im_power_df, fs, vpf_min_time_s, vpf_max_time_s)
+            
         st.subheader("Спектрограма")
-        st.pyplot(ssp.spectr_plot(im_power_df, fs, n_cols=1, columns=['im_power']), use_container_width=True)
+        st.pyplot(ssp.spectr_plot(vpf_cut, fs, n_cols=1, columns=['im_power']), use_container_width=True)
         st.subheader("Графік PSD")
         db_scale_vpf = st.checkbox("Показати в шкалі децибел, дБ", value=False, key='db_scale_vpf')
         if db_scale_vpf:
-            st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='db'), use_container_width=True,key="plot_vpf_psd1")
-            f, Pxx = ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='db') 
+            st.plotly_chart(ssp.psd_plot_df(vpf_cut, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='db'), use_container_width=True,key="plot_vpf_psd1")
+            f_vpf, Pxx_vpf = ssp.psd_plot_df(vpf_cut, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='db') 
         else:
-            st.plotly_chart(ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='energy'), use_container_width=True,key="plot_vpf_psd2")
-            f, Pxx = ssp.psd_plot_df(im_power_df, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='energy') 
+            st.plotly_chart(ssp.psd_plot_df(vpf_cut, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='energy'), use_container_width=True,key="plot_vpf_psd2")
+            f_vpf, Pxx_vpf = ssp.psd_plot_df(vpf_cut, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='energy')     
 
         st.subheader("🎚️ Середнє квадратичне значення PSD в діапазоні")
-
-        with st.form("psd_window_form", clear_on_submit=False):
-            # Поля для введення мінімальної та максимальної частоти
-            col1, col2 = st.columns(2)
-            with col1:
-                min_freq_psd = st.number_input("🔻 Мінімальна частота", min_value=0.0, value=20.0, step=1.0, key='min_freq_psd')
-                
-            with col2:
-                max_freq_psd = st.number_input("🔺 Максимальна частота", min_value=0.0, value=50.0, step=1.0, key='max_freq_psd')
-            submitted = st.form_submit_button("⚙️ Розрахувати")
+    
+        col1, col2 = st.columns(2)
+        with col1:
+            min_freq_psd = st.number_input("🔻 Мінімальна частота", min_value=0.0, value=20.0, step=1.0,  key='min_freq_psd')
             
-        if submitted:
-            print(f[0])
-            print(Pxx[0])
-            rms_psd, range_freq_val = ssp.rms_in_band(f[0], Pxx[0], min_freq_psd, max_freq_psd)
-            st.subheader(f"🎚️ RMS PSD дорівнює {rms_psd} в діапазоні від {range_freq_val[0]} Гц до {range_freq_val[1]} Гц")
+        with col2:
+            max_freq_psd = st.number_input("🔺 Максимальна частота", min_value=0.0, value=50.0, step=1.0, key='max_freq_psd')
+            
+            
+        
+        print(f[0])
+        print(Pxx[0])
+        rms_psd, range_freq_val = ssp.rms_in_band(f_vpf[0], Pxx_vpf[0], min_freq_psd, max_freq_psd)
+        st.subheader(f"🎚️ RMS PSD дорівнює {rms_psd} в діапазоні від {range_freq_val[0]} Гц до {range_freq_val[1]} Гц")
+
+
+
+
 
 
 
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
-        with st.form("vpf_window_form", clear_on_submit=False):
+        with st.form("vpf_window_form2", clear_on_submit=False):
             # Поля для введення мінімальної та максимальної частоти
             col1, col2 = st.columns(2)
             with col1:
-                vpf_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=1.0, step=0.1, key='min_time_sig')
+                vpf_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=1.0, step=0.1, format="%.4f", key='min_time_sig2')
             with col2:
-                vpf_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=10.0, step=0.1, key='max_time_sig')
+                vpf_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=10.0, step=0.1, format="%.4f", key='max_time_sig2')
             col1, col2 = st.columns(2)
             with col1:
-                vpf_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=1.0, step=0.1, key='min_time_noise')
+                vpf_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=1.0, step=0.1, format="%.4f", key='min_time_noise2')
             with col2:
-                vpf_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=10.0, step=0.1, key='max_time_noise')
+                vpf_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=10.0, step=0.1, format="%.4f", key='max_time_noise2')
             
             submitted = st.form_submit_button("⚙️ Застосувати вікно")
             # Кнопка для запуску фільтрації
@@ -1142,9 +1232,121 @@ with tab11:
                             use_container_width=True, key="plot_hackl_w"+str(seismometr_vpf))
             
 
+# === Вкладка 12: Азимутальна когерентність ===
 
-# === Вкладка 12: Математична модель сонара ===
+
 with tab12:
+    st.subheader("Обчислення азимутальної когерентності")
+    st.subheader("Задайте схему розрахунку")
+
+    corr_arcs = {}
+    sel_sig1_list = []
+    sel_sig2_list = []
+    sel_geo1_list = []
+    sel_geo2_list = []
+
+    sel_arc_list = []
+    sel_angl_list = []
+
+    if len(st.session_state.dfs)>0:
+
+        n_arc = int(st.number_input("Кількість дуг з сейсмометрами", min_value=0, value=3, step=1, key='arc_numb'))
+        seism_list_txt = st.text_area("Введіть кількість сейсмометрів на кожній дузі (через кому):", "7, 9, 11")
+        seism_list = None
+        if seism_list_txt:
+            try:
+                seism_list = [float(x.strip()) for x in seism_list_txt.split(',')]
+                st.write("Список:", seism_list)
+            except ValueError:
+                st.error("Неможливо перетворити деякі елементи на числа.")
+
+        if n_arc and seism_list:
+        
+            # with st.form("azmt_window_form", clear_on_submit=False): 
+            col1, col2, col3 = st.columns(3)
+            for i in range(1, int(sum(seism_list))-n_arc+1):
+                with col1:
+                    sel_ser1 = st.selectbox(f"Оберіть першу серію пари №{i} для відображення зі списку:", 
+                                                      list(st.session_state.dfs.keys())+list(st.session_state.dfs_vpf.keys())+list(st.session_state.dfs_sum.keys())+list(st.session_state.dfs_sub.keys()),
+                                                      key="azmt_sel_ser1"+str(i))
+                    sel_geoph1 = st.multiselect("Оберіть геофони для відображення зі списку:", 
+                                                        st.session_state.geoph_list+st.session_state.im_geoph_list+['X', 'Z', 'Y1', 'Y2'],
+                                                        default=st.session_state.def_geoph_list,
+                                                        key="azmt_sel_geo1"+str(i))
+                with col2:
+                    sel_ser2 = st.selectbox(f"Оберіть другу серію пари №{i} для відображення зі списку:", 
+                                                      list(st.session_state.dfs.keys())+list(st.session_state.dfs_vpf.keys())+list(st.session_state.dfs_sum.keys())+list(st.session_state.dfs_sub.keys()),
+                                                      key="azmt_sel_ser2"+str(i))
+                    sel_geoph2 = st.multiselect("Оберіть геофони для відображення зі списку:", 
+                                                        st.session_state.geoph_list+st.session_state.im_geoph_list+['X', 'Z', 'Y1', 'Y2'],
+                                                        default=st.session_state.def_geoph_list,
+                                                        key="azmt_sel_geo2"+str(i))
+                with col3:
+                    sel_angl = float(st.number_input("Кут другого в парі сейсмометра", min_value=0, value=30, step=1, key='arc_angl'+str(i)))
+                    sel_arc = int(st.selectbox("Оберіть номер дуги:", list(range(1, n_arc + 1)), key="arc_numb"+str(i)))
+                    
+                
+                sel_geo1_list.append(sel_geoph1)
+                sel_geo2_list.append(sel_geoph2)
+                sel_sig1_list.append(sel_ser1)
+                sel_sig2_list.append(sel_ser2)
+                sel_arc_list.append(sel_arc)
+                sel_angl_list.append(sel_angl)
+                
+            st.write(sel_sig1_list)
+            st.write(sel_sig2_list)
+            st.write(sel_geo1_list)
+            st.write(sel_geo2_list)
+            st.write(sel_arc_list)
+            st.write(sel_angl_list)
+            
+            if st.button("⚙️ Застосувати схему розрахунку"):
+                st.success("Застосовується схема")
+                
+                # corr_list = []
+                
+                    
+                # for sig1, sig2, geo1, geo2, arc, angl in zip(sel_sig1_list, sel_sig2_list, sel_geo1_list, sel_geo2_list, sel_arc_list, sel_angl_list):
+                    
+                #     df1 = st.session_state.dfs[sig1][geo1]
+                #     df2 = st.session_state.dfs[sig2][geo2]
+                    
+                #     st.write(df1)
+                #     st.write(df2)
+                
+                #     corr_list.append(np.corrcoef(df1, df2))
+                    
+                # st.write(corr_list)
+                
+                
+                        
+                #     df = df.add_suffix("_"+df_name)
+                #     df = ssp.cut_dataframe_time_window(df, fs=fs, start_time=min_time_list[i], end_time=max_time_list[i])
+
+                #     df_plot_list.append(df)
+                # df_plot_list = ssp.align_dataframe_lengths(df_plot_list)
+                # df_plot = pd.concat(df_plot_list, axis=1)
+                
+                # print(df_plot)
+                # print(min_time_list)
+                # print(max_time_list)
+                
+                # st.plotly_chart(ssp.plot_time_signals(df_plot, 
+                #                                       fs, 
+                #                                       n_cols=1, 
+                #                                       threshold=0.5, columns=list(df_plot.columns), 
+                #                                       mode="plotly_one"), 
+                #                 use_container_width=True, key='plots_multy')
+                
+                # st.subheader("Затримка між сигналами")
+                
+                # delay_matrix = ssp.compute_delay_matrix(df_plot, fs, method='gcc_phat')
+                # st.dataframe(delay_matrix)
+
+
+
+# === Вкладка 13: Математична модель сонара ===
+with tab13:
     st.subheader("Математична модель затухання")
     st.subheader("Виконайте когерентне віднімання. Побудуйте діаграму VPF")
 
