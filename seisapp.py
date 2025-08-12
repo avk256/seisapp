@@ -564,8 +564,8 @@ with tab8:
         with st.form("coher_window_form", clear_on_submit=False): 
                         
             st.write("1й сигнал")
-            selected_ser1_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser1")
-            selected_seism1_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list,key="coh_sel_seism1")
+            selected_ser1_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys())+list(st.session_state.dfs_vpf.keys()),key="coh_sel_ser1")
+            selected_seism1_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list+st.session_state.im_geoph_list,key="coh_sel_seism1")
 
             col1, col2 = st.columns(2)
             with col1:
@@ -574,8 +574,8 @@ with tab8:
                 coher_max_time_s1 = st.number_input("🔺 Кінець сигналу", format="%.4f", min_value=0.0, value=1.0, step=0.1, key='coher_max_time_sig1')
            
             st.write("2й сигнал")
-            selected_ser2_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sel_ser2")
-            selected_seism2_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list,key="coh_sel_seism2")
+            selected_ser2_coher = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys())+list(st.session_state.dfs_vpf.keys()),key="coh_sel_ser2")
+            selected_seism2_coher = st.selectbox("Оберіть типи геофонів для відображення зі списку:", st.session_state.geoph_list+st.session_state.im_geoph_list,key="coh_sel_seism2")
 
             col1, col2 = st.columns(2)
             with col1:
@@ -608,9 +608,21 @@ with tab8:
                 
             coher_nperseg = int(coher_seg_len_s * fs)
             coher_noverlap = int(coher_overlap_s * fs)
+            
+            
+            if 'vpf' in selected_ser1_coher:
+                df1 = st.session_state.dfs_vpf[selected_ser1_coher][selected_seism1_coher]
+            else:
+                df1 = st.session_state.dfs[selected_ser1_coher][selected_seism1_coher]
+                
+            if 'vpf' in selected_ser2_coher:
+                df2 = st.session_state.dfs_vpf[selected_ser2_coher][selected_seism2_coher]
+            else:
+                df2 = st.session_state.dfs[selected_ser2_coher][selected_seism2_coher]
 
-            df1 = st.session_state.dfs[selected_ser1_coher][selected_seism1_coher]
-            df2 = st.session_state.dfs[selected_ser2_coher][selected_seism2_coher]
+
+            # df1 = st.session_state.dfs[selected_ser1_coher][selected_seism1_coher]
+            # df2 = st.session_state.dfs[selected_ser2_coher][selected_seism2_coher]
             
             df2 = df2[:len(df1)]
                     
