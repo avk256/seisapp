@@ -724,6 +724,15 @@ with tab10:
         st.write("Геофони для аналізу")
         selected_geoph_sub = st.multiselect("Оберіть геофони для відображення зі списку:", st.session_state.geoph_list,key="sel_subs")
         
+        noisy_sig_len_s = 0.0
+        if len(st.session_state.dfs)>0 and selected_ser_sub and selected_geoph_sub:
+            noisy_sig_df = st.session_state.dfs[selected_ser_sub][selected_geoph_sub]
+            
+            noisy_sig_len_s = len(noisy_sig_df)/fs
+        
+
+
+        
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
         with st.form("subs_window_form", clear_on_submit=False):
@@ -744,12 +753,14 @@ with tab10:
             with col1:
                 subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=2.53, step=0.1, format="%.4f" , key='subs_min_time_sig')
             with col2:
-                subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=2.63, step=0.1, format="%.4f", key='subs_max_time_sig')
+                subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=noisy_sig_len_s, step=0.1, format="%.4f", key='subs_max_time_sig')
             col1, col2 = st.columns(2)
             with col1:
-                subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=2.63, step=0.1, format="%.4f", key='subs_min_time_noise')
+                subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=noisy_sig_len_s, step=0.1, format="%.4f", key='subs_min_time_noise')
             with col2:
-                subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=2.74, step=0.1, format="%.4f", key='subs_max_time_noise')
+                subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=noisy_sig_len_s, step=0.1, format="%.4f", key='subs_max_time_noise')
+
+
             
             sig_len = subs_max_time_s-subs_min_time_s
             noise_len = subs_max_time_n-subs_min_time_n
@@ -757,24 +768,53 @@ with tab10:
             st.write(f"Довжина шуму {noise_len:.4f} c")
             
             
-            seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='subs_nperseg')
-            overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='subs_noverlap')
+            # seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='subs_nperseg')
+            # overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='subs_noverlap')
+
 
             st.write("Поріг чутливості маски когерентності") 
             st.write("Менше значення (~0.0) → маска чутливіша, більше частот вважаються когерентними → агресивніше приглушення.")
             st.write("Більше значення (~0.2–0.3) → менше частот перевищують поріг → м’якіше приглушення.")
             st.write("Значення >0.3 → дуже обережне приглушення")
 
-            coherence_threshold = st.number_input("Поріг чутливості", min_value=0.0, value=0.2, step=0.1, key='subs_coher_thersh')
+            coherence_threshold = st.number_input("Поріг чутливості", min_value=0.0, value=0.9, step=0.1, key='subs_coher_thersh')
             
             st.write("Інтенсивність приглушення контролює, наскільки сильно заглушується спектр у точках, де когерентність висока.")
             st.write("1.0 (максимум) — повне приглушення когерентних компонент.")
             st.write("0.0 — взагалі не приглушується, лише оцінюється.")
             st.write("0.3–0.7 — м’яке згасання когерентних ділянок без агресивного вирізання.")
             
-            suppression_strength = st.number_input("Інтенсивність приглушення", min_value=0.0, value=0.2, step=0.1, key='subs_suppr_strength')
+            suppression_strength = st.number_input("Інтенсивність приглушення", min_value=0.0, value=1.0, step=0.1, key='subs_suppr_strength')
             
-            method_delay_subs = st.selectbox("Оберіть метод обчислення затримок:", ['gcc_phat', 'envelope', 'cross_correlation', 'rms_envelope'],key="sel_method_delay_subs")
+            st.write("win_len. Довжина ковзного вікна (непарне число відліків)")
+            st.write("Обирається за тривалістю події (імпульсу).")
+            st.write("Має бути приблизно 1–2× довжини події, яку хочемо виявити/приглушити.")
+            st.write("Типово: 101–301 для сигналів довжиною кілька тисяч відліків.")
+            st.write("Занадто мале → шумні оцінки, стрибки;")
+            st.write("занадто велике → втрата локалізації (ціль «змазується»).")
+            
+            win_len = int(st.number_input("Довжина ковзного вікна (непарне число відліків)", min_value=0, value=201, step=1, key='subs_win_len'))
+            
+            st.write("smooth_alpha. Згладжування коефіцієнта масштабу α")
+            st.write("Використовується для стабілізації сили віднімання.")
+            st.write("Має бути приблизно 1–2× довжини події, яку хочемо виявити/приглушити.")
+            st.write("Типові значення: 0.1–0.3 × win_len.")
+            st.write("Занадто мале → α «стрибає», виникає недо/перевіднімання;")
+            st.write("занадто велике → віднімання розмазується на сусідні точки")
+            
+            smooth_alpha = int(st.number_input("згладжування коефіцієнта масштабу α (число відліків)", min_value=0, value=int(0.15*win_len), step=1, key='subs_smooth_alpha'))
+            
+            st.write("smooth_gamma. Згладжування показника когерентності γ²")
+            st.write("Має бути меншим за smooth_alpha, щоб не втратити короткі події.")
+            st.write("Типові значення: 0.05–0.2 × win_len.")
+            st.write("Занадто мале → маска «мерехтить» (дірки в приглушенні);")
+            st.write("занадто велике → короткі цілі теж придушуються.")
+            st.write("занадто велике → віднімання розмазується на сусідні точки")
+            
+            smooth_gamma = int(st.number_input("Згладжування показника когерентності γ² (число відліків)", min_value=0, value=int(0.2*win_len), step=1, key='subs_smooth_gamma'))
+            
+            
+            # method_delay_subs = st.selectbox("Оберіть метод обчислення затримок:", ['gcc_phat', 'envelope', 'cross_correlation', 'rms_envelope'],key="sel_method_delay_subs")
           
             plot_figs_s = st.checkbox("Побудувати графік амплітуда-час початкового сигналу", value=False, key='plot_figs_s')
             plot_figs_n = st.checkbox("Побудувати графік амплітуда-час шуму", value=False, key='plot_figs_n')
@@ -809,23 +849,37 @@ with tab10:
             # print(selected_ser1)
             # print(st.session_state.selected_ser1)
             # breakpoint()       
-            
-            noisy_sig_df = st.session_state.dfs[selected_ser_sub][selected_geoph_sub]
+
             noisy_sig_df_cut = ssp.cut_dataframe_time_window(noisy_sig_df, fs=fs, start_time=subs_min_time_s, end_time=subs_max_time_s)
             ref_noise_df_cut = ssp.cut_dataframe_time_window(noisy_sig_df, fs=fs, start_time=subs_min_time_n, end_time=subs_max_time_n)
             ref_noise_df_cut = ref_noise_df_cut[0:len(noisy_sig_df_cut)]
+            
         
             delay_list = []
             for geoph in selected_geoph_sub: #['X1','Y11','Y12','Z1','X2','Y21','Y22','Z2','X3','Y31','Y32','Z3']: 
-                signal, delay, _, _, _, _, _ = ssp.coherent_subtraction_adaptive(noisy_sig_df_cut[geoph], 
-                                                                             ref_noise_df_cut[geoph], 
-                                                                             seg_len_s=seg_len_s, 
-                                                                             overlap_s=overlap_s,
-                                                                             coherence_bias=coherence_threshold, 
-                                                                             suppression_strength=suppression_strength, 
-                                                                             delay_method=method_delay_subs, 
-                                                                             max_lag_s=None,
-                                                                             freq_limit=None)
+                # signal, delay, _, _, _, _, _ = ssp.coherent_subtraction_adaptive(noisy_sig_df_cut[geoph], 
+                #                                                              ref_noise_df_cut[geoph], 
+                #                                                              seg_len_s=seg_len_s, 
+                #                                                              overlap_s=overlap_s,
+                #                                                              coherence_bias=coherence_threshold, 
+                #                                                              suppression_strength=suppression_strength, 
+                #                                                              delay_method=method_delay_subs, 
+                #                                                              max_lag_s=None,
+                #                                                              freq_limit=None)
+                
+                
+                signal, delay, _, _  =  ssp.coherent_subtraction_adaptive_1d(noisy_sig_df_cut[geoph],
+                                                                         ref_noise_df_cut[geoph],
+                                                                         fs=fs,
+                                                                         win_len=win_len,
+                                                                         corr_threshold=coherence_threshold,
+                                                                         suppression_strength=suppression_strength,
+                                                                         smooth_alpha=smooth_alpha,
+                                                                         smooth_gamma=smooth_gamma
+                                                                         )
+                
+                
+                
                 signal = signal[:len(noisy_sig_df_cut)]
                 data_geoph[geoph] = signal
                 
@@ -859,8 +913,16 @@ with tab10:
         st.write("Геофони для аналізу")
         selected_geoph_sub = st.multiselect("Оберіть геофони для відображення зі списку:", st.session_state.geoph_list+st.session_state.im_geoph_list,key="sel_subs")
         
-  
+        noisy_sig_len_s = 0.0
+        ref_noise_len_s = 0.0 
+        
+        if len(st.session_state.dfs)>0:
 
+            noisy_sig_df = st.session_state.dfs[selected_ser1_sub][selected_geoph_sub]
+            ref_noise_df = st.session_state.dfs[selected_ser2_sub][selected_geoph_sub]
+            
+            noisy_sig_len_s = len(noisy_sig_df)/fs
+            ref_noise_len_s = len(ref_noise_df)/fs
 
         with st.form("subs_window_form2", clear_on_submit=False):    
             
@@ -877,38 +939,72 @@ with tab10:
                 with col1:
                     subs_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_min_time_sig2')
                 with col2:
-                    subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_max_time_sig2')
+                    subs_max_time_s = st.number_input("🔺 Кінець сигналу", min_value=0.0, value=noisy_sig_len_s, step=0.1, format="%.4f", key='subs_max_time_sig2')
                 col1, col2 = st.columns(2)
                 with col1:
                     subs_min_time_n = st.number_input("🔻 Початок шуму", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_min_time_noise2')
                 with col2:
-                    subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=0.0, step=0.1, format="%.4f", key='subs_max_time_noise2')
+                    subs_max_time_n = st.number_input("🔺 Кінець шуму", min_value=0.0, value=ref_noise_len_s, step=0.1, format="%.4f", key='subs_max_time_noise2')
                 
                 sig_len = subs_max_time_s-subs_min_time_s
                 noise_len = subs_max_time_n-subs_min_time_n
+                sig_len_samples = sig_len * fs 
+                noise_len_samples = noise_len * fs
+                
+                st.write(f"Частота дискретизації {fs:.4f} Гц")
+                
                 st.write(f"Довжина сигналу {sig_len:.4f} c")
                 st.write(f"Довжина шуму {noise_len:.4f} c")
                 
+                st.write(f"Довжина сигналу у відліках (samples). {sig_len_samples:.0f}")
+                st.write(f"Довжина шуму у відліках (samples). {noise_len_samples:.0f}")
                 
-                seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='subs_nperseg2')
-                overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='subs_noverlap2')
-
-
-                st.write("Поріг чутливості маски когерентності") 
+                
+                # seg_len_s = st.number_input("Довжина одного сегмента спектрограми, с", min_value=0.0, value=0.02, step=0.1, format="%.4f", key='subs_nperseg')
+                # overlap_s = st.number_input("Величина перекриття між сегментами, с", min_value=0.0, value=0.018, step=0.01, format="%.4f", key='subs_noverlap')
+    
+    
+                st.subheader("Поріг чутливості маски когерентності") 
                 st.write("Менше значення (~0.0) → маска чутливіша, більше частот вважаються когерентними → агресивніше приглушення.")
                 st.write("Більше значення (~0.2–0.3) → менше частот перевищують поріг → м’якіше приглушення.")
                 st.write("Значення >0.3 → дуже обережне приглушення")
     
-                coherence_threshold = st.number_input("Поріг чутливості", min_value=0.0, value=0.2, step=0.1, key='subs_coher_thersh')
+                coherence_threshold = st.number_input("Поріг чутливості", min_value=0.0, value=0.9, step=0.1, key='subs_coher_thersh2')
                 
-                st.write("Інтенсивність приглушення контролює, наскільки сильно заглушується спектр у точках, де когерентність висока.")
+                st.subheader("Інтенсивність приглушення ")
+                st.write("Контролює наскільки сильно заглушується спектр у точках, де когерентність висока.")
                 st.write("1.0 (максимум) — повне приглушення когерентних компонент.")
                 st.write("0.0 — взагалі не приглушується, лише оцінюється.")
                 st.write("0.3–0.7 — м’яке згасання когерентних ділянок без агресивного вирізання.")
                 
-                suppression_strength = st.number_input("Інтенсивність приглушення", min_value=0.0, value=0.2, step=0.1, key='subs_suppr_strength')
+                suppression_strength = st.number_input("Інтенсивність приглушення", min_value=0.0, value=1.0, step=0.1, key='subs_suppr_strength2')
                 
-                method_delay_subs = st.selectbox("Оберіть метод обчислення затримок:", ['gcc_phat', 'envelope', 'cross_correlation', 'rms_envelope'],key="sel_method_delay_subs")
+                st.subheader("win_len. Довжина ковзного вікна (непарне число відліків)")
+                st.write("Обирається за тривалістю події (імпульсу).")
+                st.write("Має бути приблизно 1–2× довжини події, яку хочемо виявити/приглушити.")
+                st.write("Типово: 101–301 для сигналів довжиною кілька тисяч відліків.")
+                st.write("Занадто мале → шумні оцінки, стрибки;")
+                st.write("занадто велике → втрата локалізації (ціль «змазується»).")
+                
+                win_len = int(st.number_input("Довжина ковзного вікна (непарне число відліків)", min_value=0, value=201, step=1, key='subs_win_len2'))
+                
+                st.subheader("smooth_alpha. Згладжування коефіцієнта масштабу α")
+                st.write("Використовується для стабілізації сили віднімання.")
+                st.write("Має бути приблизно 1–2× довжини події, яку хочемо виявити/приглушити.")
+                st.write("Типові значення: 0.1–0.3 × win_len.")
+                st.write("Занадто мале → α «стрибає», виникає недо/перевіднімання;")
+                st.write("занадто велике → віднімання розмазується на сусідні точки")
+                
+                smooth_alpha = int(st.number_input("згладжування коефіцієнта масштабу α (число відліків)", min_value=0, value=int(0.15*win_len), step=1, key='subs_smooth_alpha2'))
+                
+                st.subheader("smooth_gamma. Згладжування показника когерентності γ²")
+                st.write("Має бути меншим за smooth_alpha, щоб не втратити короткі події.")
+                st.write("Типові значення: 0.05–0.2 × win_len.")
+                st.write("Занадто мале → маска «мерехтить» (дірки в приглушенні);")
+                st.write("занадто велике → короткі цілі теж придушуються.")
+                st.write("занадто велике → віднімання розмазується на сусідні точки")
+                
+                smooth_gamma = int(st.number_input("Згладжування показника когерентності γ² (число відліків)", min_value=0, value=int(0.2*win_len), step=1, key='subs_smooth_gamma2'))
 
 
                 plot_figs_s = st.checkbox("Побудувати графік амплітуда-час початкового сигналу", value=False, key='plot_figs_s2')
@@ -956,16 +1052,27 @@ with tab10:
                 #                                                                       overlap_s=overlap_s,
                 #                                                                       coherence_threshold=coherence_threshold)
                 
-                signal, delay, _, _, _, _, _ = ssp.coherent_subtraction_adaptive(noisy_sig_df_cut[geoph], 
-                                                                                      ref_noise_df_cut[geoph], 
-                                                                                      seg_len_s=seg_len_s, 
-                                                                                      overlap_s=overlap_s,
+                # signal, delay, _, _, _, _, _ = ssp.coherent_subtraction_adaptive(noisy_sig_df_cut[geoph], 
+                #                                                                       ref_noise_df_cut[geoph], 
+                #                                                                       seg_len_s=seg_len_s, 
+                #                                                                       overlap_s=overlap_s,
                                                                                       
-                                                                                      coherence_bias=coherence_threshold, 
-                                                                                      suppression_strength=suppression_strength, 
-                                                                                      delay_method=method_delay_subs, 
-                                                                                      max_lag_s=None,
-                                                                                      freq_limit=None)
+                #                                                                       coherence_bias=coherence_threshold, 
+                #                                                                       suppression_strength=suppression_strength, 
+                #                                                                       delay_method=method_delay_subs, 
+                #                                                                       max_lag_s=None,
+                #                                                                       freq_limit=None)
+
+                signal, delay, _, _  =  ssp.coherent_subtraction_adaptive_1d(noisy_sig_df_cut[geoph],
+                                                                         ref_noise_df_cut[geoph],
+                                                                         fs=fs,
+                                                                         win_len=win_len,
+                                                                         corr_threshold=coherence_threshold,
+                                                                         suppression_strength=suppression_strength,
+                                                                         smooth_alpha=smooth_alpha,
+                                                                         smooth_gamma=smooth_gamma
+                                                                         )
+
                 
                 signal = signal[:len(st.session_state.dfs[selected_ser1_sub][geoph])]
                 data_geoph[geoph] = signal
