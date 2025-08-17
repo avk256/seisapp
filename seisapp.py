@@ -667,15 +667,69 @@ with tab9:
             # Поля для введення мінімальної та максимальної частоти
             st.write("Оберіть серію для підсумовування відповідних сигналів сейсмометрів")
             selected_ser_sum = st.selectbox("Оберіть серію для відображення зі списку:", list(st.session_state.dfs.keys()),key="coh_sum_sel_ser1")
-            submitted = st.form_submit_button("⚙️ Розрахувати")
+
+            st.subheader("Поріг чутливості маски когерентності") 
+            st.write("Менше значення (~0.0) → маска чутливіша, більше частот вважаються когерентними → агресивніше приглушення.")
+            st.write("Більше значення (~0.2–0.3) → менше частот перевищують поріг → м’якіше приглушення.")
+            st.write("Значення >0.3 → дуже обережне приглушення")
+
+            coherence_threshold_sum = st.number_input("Поріг чутливості", min_value=0.0, value=0.9, step=0.1, key='sum_coher_thersh')
+            
+            st.subheader("win_len. Довжина ковзного вікна (непарне число відліків)")
+            st.write("Обирається за тривалістю події (імпульсу).")
+            st.write("Має бути приблизно 1–2× довжини події, яку хочемо виявити/приглушити.")
+            st.write("Типово: 101–301 для сигналів довжиною кілька тисяч відліків.")
+            st.write("Занадто мале → шумні оцінки, стрибки;")
+            st.write("занадто велике → втрата локалізації (ціль «змазується»).")
+            
+            win_len = int(st.number_input("Довжина ковзного вікна (непарне число відліків)", min_value=0, value=201, step=1, key='sum_win_len'))
+            
+            st.subheader("p — «жорсткість» ваг")
+            st.write("Вага = (max(γ² − tau, 0))^p. ")
+            st.write("Більше p → сильніше підкреслює когерентні ділянки.")
+            
+            p_val = int(st.number_input("«жорсткість» ваг", min_value=1, value=2, step=1, key='sum_p_val'))
+            
+            st.subheader("smooth_gamma. Згладжування показника когерентності γ²")
+            st.write("Типові значення: 0.05–0.2 × win_len.")
+            st.write("Занадто мале → маска «мерехтить» (дірки в приглушенні);")
+            st.write("занадто велике → короткі цілі теж придушуються.")
+            st.write("занадто велике → віднімання розмазується на сусідні точки")
+            
+            smooth_gamma_sum = int(st.number_input("Згладжування показника когерентності γ² (число відліків)", min_value=0, value=int(0.2*win_len), step=1, key='sum_smooth_gamma'))
+
+            st.subheader("use_mask — вмикає/вимикає когерентні ваги.")
+            st.write("Якщо False → звичайна сума.")
+            
+            use_mask = st.selectbox("Увімкнути маску?", ["True", "False"], key="sel_use_mask")
+            
+            st.subheader("use_median — стійкий суматор по каналах")
+            st.write("Медіана замість зваженого середнього; добре, коли є «погані» канали.")
+            
+            
+            use_median = st.selectbox("Застосувати медіану?", ["True", "False"], key="sel_use_median")
+            
+
+            submitted = st.form_submit_button("⚙️ Розрахувати суму")
             
         if submitted:
             st.subheader("Обрана серія: "+selected_ser_sum)
-            df_sum = ssp.coherent_summation(st.session_state.dfs[selected_ser_sum], fs=fs)
+            df_sum = ssp.coherent_summation(st.session_state.dfs[selected_ser_sum], fs=fs,
+                                            method='gcc_phat', max_lag_s=None,
+                                            win_len=win_len, tau=coherence_threshold_sum,
+                                            p=p_val, smooth_gamma=smooth_gamma_sum,
+                                            use_mask=bool(use_mask), use_median=bool(use_median))
             print("coherent sum")
             print(df_sum)
             # breakpoint()
             # df_sum = ssp.duplicate_columns(df_sum)
+            
+            st.subheader("Оригінальні дані")
+            
+            st.plotly_chart(ssp.plot_time_signals(st.session_state.dfs[selected_ser_sum], fs, n_cols=n_cols_plots, threshold=0.5, columns=list(st.session_state.dfs[selected_ser_sum].columns), mode="plotly_one"), use_container_width=True, key='plot_init_coher_sum')    
+            
+            st.subheader("Результат когерентної суми відповідних каналів")
+            
             st.plotly_chart(ssp.plot_time_signals(df_sum, fs, n_cols=n_cols_plots, threshold=0.5, columns=list(df_sum.columns), mode="plotly_one"), use_container_width=True, key='plot_coher_sum')    
             st.session_state.dfs_sum[selected_ser_sum+"_sum"] = df_sum
         
