@@ -220,6 +220,23 @@ with st.sidebar:
 
                 st.session_state.dfs[key] = ssp.detrend_dataframe(data)
     
+
+        # ===================== Вирівнювання сигналів =======================================
+
+        st.subheader("🎚️ Операція вирівнювання сигналів")
+        # Кнопка для запуску детренду
+        if st.button("⚙️ Застосувати вирівнювання"):
+            st.success("Застосовується вирівнювання")
+            # Тут можна викликати функцію фільтрації
+            for key, data in st.session_state.dfs.items():
+                # print(data.describe())
+                # breakpoint()
+
+                st.session_state.dfs[key] = ssp.detrend_dataframe(data)
+
+    
+    
+    
     
     
 # dfs = dfs
@@ -1163,9 +1180,11 @@ with tab10:
             
         signal_vpf = ssp.vpf_df(st.session_state.noisy_sig_plot, fs)
         noise_vpf = ssp.vpf_df(st.session_state.ref_noise_plot, fs)                         
-        snr_df = ssp.compute_snr_df(signal_vpf, noise_vpf)
+        snr_df, snr_df_db = ssp.compute_snr_df(signal_vpf, noise_vpf)
         st.subheader("Відношення SNR")
         st.dataframe(snr_df)
+        st.subheader("SNR в дБ")
+        st.dataframe(snr_df_db)
 
     
         st.subheader("Результат когерентного віднімання")
@@ -1323,8 +1342,8 @@ with tab11:
         
         ####### ------------- Розрахунок спектру та PSD на основі вікна з сигналом
 
-        
-        # Поля для введення мінімальної та максимальної частоти
+
+         # Поля для введення мінімальної та максимальної частоти
         col1, col2 = st.columns(2)
         with col1:
             vpf_min_time_s = st.number_input("🔻 Початок сигналу", min_value=0.0, value=1.0, step=0.1, format="%.4f", key='min_time_sig1')
@@ -1362,10 +1381,6 @@ with tab11:
 
 
 
-
-
-
-
         st.subheader("🎚️ Часові вікна сигналу та шуму")
         
         with st.form("vpf_window_form2", clear_on_submit=False):
@@ -1387,17 +1402,32 @@ with tab11:
             signal = ssp.cut_dataframe_time_window(im_power_df, fs, vpf_min_time_s, vpf_max_time_s)
             noise = ssp.cut_dataframe_time_window(im_power_df, fs, vpf_min_time_n, vpf_max_time_n)
             
-            signal_db = 10*np.log10((np.mean(signal**2))**(1/2)+10**(-12))
-            noise_db = 10*np.log10((np.mean(noise**2))**(1/2)+10**(-12))
+            noise = noise[:len(signal)]
+
+
+            
+            signal_db = 10*np.log10((np.mean(signal**2))**(1/2)+10**(-20))
+            noise_db = 10*np.log10((np.mean(noise**2))**(1/2)+10**(-20))
+
+            signal_energy = (np.mean(signal**2))**(1/2)
+            noise_energy = (np.mean(noise**2))**(1/2)
+
             
             # snr = (np.mean(signal**2))**(1/2)/(np.mean(noise**2))**(1/2)
-            snr = ssp.compute_snr_df(signal, noise)
+            snr, snr_db  = ssp.compute_snr_df(signal, noise)
+            
             
             
             st.subheader("RMS сигналу = " + str(signal_db) + " дБ")
             st.subheader("RMS шуму = " + str(noise_db ) + " дБ")
+            st.subheader("RMS сигналу = " + str(signal_energy))
+            st.subheader("RMS шуму = " + str(noise_energy))
+
+
             st.subheader("Відношення SNR")
             st.dataframe(snr)
+            st.subheader("SNR в дБ")
+            st.dataframe(snr_db)
             st.subheader("Графік Ганкеля виділенного вікном сигналу")
             st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series_vpf+'Vr'][str(seismometr_vpf)])[0], 
                                             np.array(VrVz_dict[series_vpf+'Vz'][str(seismometr_vpf)])[0], 
