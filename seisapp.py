@@ -1332,12 +1332,18 @@ with tab11:
                 
                 
        
+        select_Vr = np.array(VrVz_dict[series_vpf+'Vr'][str(seismometr_vpf)])[0]
+        select_Vz = np.array(VrVz_dict[series_vpf+'Vz'][str(seismometr_vpf)])[0]
+        
         st.subheader("Графік Ганкеля")
-        st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series_vpf+'Vr'][str(seismometr_vpf)])[0], np.array(VrVz_dict[series_vpf+'Vz'][str(seismometr_vpf)])[0], scale=1.0, mode = 'plotly'),use_container_width=True, key="plot_hackl"+str(seismometr_vpf))
+        st.plotly_chart(ssp.plot_hankel(select_Vr, select_Vz, scale=1.0, mode = 'plotly'),use_container_width=True, key="plot_hackl"+str(seismometr_vpf))
         st.subheader("Графік уявної енергії")
-        st.plotly_chart(ssp.vpf(np.array(VrVz_dict[series_vpf+'Vr'][str(seismometr_vpf)])[0], np.array(VrVz_dict[series_vpf+'Vz'][str(seismometr_vpf)])[0], fs, mode='plotly'), key="plot_imenrg"+str(seismometr_vpf))
-        im_power = ssp.vpf(np.array(VrVz_dict[series_vpf+'Vr'][str(seismometr_vpf)])[0], np.array(VrVz_dict[series_vpf+'Vz'][str(seismometr_vpf)])[0], fs, mode='matrix') 
+        
+        im_power = ssp.vpf(select_Vr, select_Vz, fs, mode='matrix') 
+        
         im_power_df = pd.DataFrame({'im_power':im_power})
+        
+        st.plotly_chart(ssp.vpf(select_Vr, select_Vz, fs, mode='plotly'), key="plot_imenrg"+str(seismometr_vpf))
         # st.session_state.dfs[series+"_vpf"] = im_power_df
         
         ####### ------------- Розрахунок спектру та PSD на основі вікна з сигналом
@@ -1352,9 +1358,9 @@ with tab11:
             
         vpf_cut = ssp.cut_dataframe_time_window(im_power_df, fs, vpf_min_time_s, vpf_max_time_s)
             
-        st.subheader("Спектрограма")
+        st.subheader("Спектрограма уявної потужності")
         st.pyplot(ssp.spectr_plot(vpf_cut, fs, n_cols=1, columns=['im_power']), use_container_width=True)
-        st.subheader("Графік PSD")
+        st.subheader("Графік PSD уявної потужності")
         db_scale_vpf = st.checkbox("Показати в шкалі децибел, дБ", value=False, key='db_scale_vpf')
         if db_scale_vpf:
             st.plotly_chart(ssp.psd_plot_df(vpf_cut, fs=fs, n_cols=1, columns=['im_power'], mode='plotly', scale='db'), use_container_width=True,key="plot_vpf_psd1")
@@ -1404,30 +1410,48 @@ with tab11:
             
             noise = noise[:len(signal)]
 
+            f_vpf_signal, Pxx_vpf_signal = ssp.psd_plot_df(signal, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='energy')     
+            f_vpf_noise, Pxx_vpf_noise = ssp.psd_plot_df(noise, fs=fs, n_cols=1, columns=['im_power'], mode='matrix', scale='energy')     
 
             
-            signal_db = 10*np.log10((np.mean(signal**2))**(1/2)+10**(-20))
-            noise_db = 10*np.log10((np.mean(noise**2))**(1/2)+10**(-20))
+            rms_psd_signal, _ = ssp.rms_in_band(f_vpf_signal[0], Pxx_vpf_signal[0], f_vpf_signal[0][0], f_vpf_signal[0][-1])
+            rms_psd_noise, _ = ssp.rms_in_band(f_vpf_noise[0], Pxx_vpf_noise[0], f_vpf_noise[0][0], f_vpf_noise[0][-1])
 
-            signal_energy = (np.mean(signal**2))**(1/2)
-            noise_energy = (np.mean(noise**2))**(1/2)
+            rms_psd_signal_db = 10*np.log10(rms_psd_signal)
+            rms_psd_noise_db = 10*np.log10(rms_psd_noise)
+
+            
 
             
             # snr = (np.mean(signal**2))**(1/2)/(np.mean(noise**2))**(1/2)
-            snr, snr_db  = ssp.compute_snr_df(signal, noise)
+            snr = rms_psd_signal/rms_psd_noise
+            snr_db  = 10*np.log10(snr)
             
             
-            
-            st.subheader("RMS сигналу = " + str(signal_db) + " дБ")
-            st.subheader("RMS шуму = " + str(noise_db ) + " дБ")
-            st.subheader("RMS сигналу = " + str(signal_energy))
-            st.subheader("RMS шуму = " + str(noise_energy))
+            st.subheader("RMS сигналу = " + str(rms_psd_signal_db) + " дБ")
+            st.subheader("RMS шуму = " + str(rms_psd_noise_db) + " дБ")
+            st.subheader("RMS сигналу = " + str(rms_psd_signal))
+            st.subheader("RMS шуму = " + str(rms_psd_noise))
 
 
-            st.subheader("Відношення SNR")
-            st.dataframe(snr)
-            st.subheader("SNR в дБ")
-            st.dataframe(snr_db)
+            st.subheader("Відношення SNR = " + str(snr))
+            
+            st.subheader("SNR в дБ = "  + str(snr_db))
+            
+
+
+            st.subheader("Графік PSD уявної потужності у часовому вікні (сигнал)")
+            st.plotly_chart(ssp.psd_plot_df(signal, fs=fs, n_cols=1, 
+                                            columns=['im_power'], mode='plotly', 
+                                            scale='energy'), use_container_width=True,key="plot_vpf_psd3")
+
+            st.subheader("Графік PSD уявної потужності у часовому вікні (шум)")
+            st.plotly_chart(ssp.psd_plot_df(noise, fs=fs, n_cols=1, 
+                                            columns=['im_power'], mode='plotly', 
+                                            scale='energy'), use_container_width=True,key="plot_vpf_psd4")
+
+            
+            
             st.subheader("Графік Ганкеля виділенного вікном сигналу")
             st.plotly_chart(ssp.plot_hankel(np.array(VrVz_dict[series_vpf+'Vr'][str(seismometr_vpf)])[0], 
                                             np.array(VrVz_dict[series_vpf+'Vz'][str(seismometr_vpf)])[0], 
